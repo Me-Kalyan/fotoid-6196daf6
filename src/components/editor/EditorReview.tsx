@@ -8,6 +8,7 @@ import { BeforeAfterSlider } from "./BeforeAfterSlider";
 import { NeoButton } from "@/components/ui/neo-button";
 import { Download, ChevronRight, SplitSquareHorizontal, Paintbrush } from "lucide-react";
 import { useImageProcessingContext } from "@/contexts/ImageProcessingContext";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { CountryFormat } from "@/pages/Editor";
 
 interface EditorReviewProps {
@@ -58,6 +59,16 @@ export const EditorReview = ({
     const data = redo();
     if (data) setRedoImageData(data);
   }, [redo]);
+
+  // Keyboard shortcuts for undo/redo and zoom
+  useKeyboardShortcuts({
+    onUndo: handleUndo,
+    onRedo: handleRedo,
+    onZoomIn: () => setZoom(Math.min(200, zoom + 10)),
+    onZoomOut: () => setZoom(Math.max(50, zoom - 10)),
+    onResetView: () => setZoom(100),
+    enabled: !showComparison,
+  });
 
   return (
     <div className="flex-1 flex flex-col">
