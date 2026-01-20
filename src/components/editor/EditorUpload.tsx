@@ -1,13 +1,14 @@
 import { motion } from "framer-motion";
-import { Upload, Camera, ImagePlus } from "lucide-react";
+import { Upload, Camera, ImagePlus, AlertTriangle } from "lucide-react";
 import { UploadZone } from "@/components/ui/upload-zone";
 import { NeoCard } from "@/components/ui/neo-card";
 
 interface EditorUploadProps {
   onFileSelect: (file: File) => void;
+  error?: string | null;
 }
 
-export const EditorUpload = ({ onFileSelect }: EditorUploadProps) => {
+export const EditorUpload = ({ onFileSelect, error }: EditorUploadProps) => {
   return (
     <div className="flex-1 flex items-center justify-center p-8">
       <div className="w-full max-w-3xl">
@@ -25,6 +26,21 @@ export const EditorUpload = ({ onFileSelect }: EditorUploadProps) => {
             background removal, face centering, and compliance checking.
           </p>
         </motion.div>
+
+        {/* Error Message */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 border-3 border-destructive bg-destructive/10 flex items-start gap-3"
+          >
+            <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-destructive">Processing Failed</p>
+              <p className="text-sm text-muted-foreground">{error}</p>
+            </div>
+          </motion.div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}

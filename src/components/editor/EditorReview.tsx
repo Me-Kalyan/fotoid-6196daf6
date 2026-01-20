@@ -5,6 +5,7 @@ import { CompliancePanel } from "./CompliancePanel";
 import { EditorToolbar } from "./EditorToolbar";
 import { NeoButton } from "@/components/ui/neo-button";
 import { Download, ChevronRight } from "lucide-react";
+import { useImageProcessingContext } from "@/contexts/ImageProcessingContext";
 import type { CountryFormat } from "@/pages/Editor";
 
 interface EditorReviewProps {
@@ -22,6 +23,8 @@ export const EditorReview = ({
   setBgColor,
   onProceedToDownload,
 }: EditorReviewProps) => {
+  const { processedImage, compliance } = useImageProcessingContext();
+
   return (
     <div className="flex-1 flex flex-col">
       {/* Toolbar */}
@@ -49,7 +52,11 @@ export const EditorReview = ({
           animate={{ opacity: 1, scale: 1 }}
           className="flex-1 flex items-center justify-center p-4 lg:p-8 bg-secondary/30"
         >
-          <PhotoCanvas bgColor={bgColor} />
+          <PhotoCanvas 
+            bgColor={bgColor} 
+            processedImageUrl={processedImage?.processedImage}
+            faceLandmarks={processedImage?.faceLandmarks}
+          />
         </motion.main>
 
         {/* Right Panel - Compliance Checklist */}
@@ -58,7 +65,7 @@ export const EditorReview = ({
           animate={{ opacity: 1, x: 0 }}
           className="w-full lg:w-80 border-t-3 lg:border-t-0 lg:border-l-3 border-primary bg-background p-4 lg:p-6"
         >
-          <CompliancePanel />
+          <CompliancePanel compliance={compliance} />
           
           {/* Download CTA */}
           <div className="mt-6 pt-6 border-t-2 border-primary">
