@@ -13,6 +13,7 @@ const neoBadgeVariants = cva(
         highlight: "bg-highlight text-highlight-foreground",
         outline: "bg-background text-foreground",
         secondary: "bg-secondary text-secondary-foreground",
+        muted: "bg-muted text-muted-foreground border-muted-foreground",
       },
       size: {
         sm: "px-2 py-0.5 text-xs",
