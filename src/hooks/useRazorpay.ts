@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { triggerHaptic } from "@/hooks/useHapticFeedback";
@@ -51,48 +51,55 @@ const PLAN_DESCRIPTIONS: Record<PlanType, string> = {
   pro: "Pro Monthly Subscription",
 };
 
-export function useRazorpay() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [scriptLoaded, setScriptLoaded] = useState(false);
-
-  // Load Razorpay script
-  useEffect(() => {
+// Lazy load Razorpay script only when needed
+const loadRazorpayScript = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
     if (window.Razorpay) {
-      setScriptLoaded(true);
+      resolve();
+      return;
+    }
+
+    const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => resolve());
       return;
     }
 
     const script = document.createElement("script");
     script.src = "https://checkout.razorpay.com/v1/checkout.js";
     script.async = true;
-    script.onload = () => setScriptLoaded(true);
-    script.onerror = () => {
-      console.error("Failed to load Razorpay script");
-      toast({
-        title: "Error",
-        description: "Failed to load payment gateway. Please try again.",
-        variant: "destructive",
-      });
-    };
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Razorpay script"));
     document.body.appendChild(script);
+  });
+};
 
-    return () => {
-      // Don't remove script on unmount as it might be used elsewhere
-    };
-  }, []);
+export function useRazorpay() {
+  const [isLoading, setIsLoading] = useState(false);
+  const scriptLoadPromise = useRef<Promise<void> | null>(null);
 
   const initiatePayment = useCallback(
     async (planType: PlanType): Promise<boolean> => {
-      if (!scriptLoaded) {
-        toast({
-          title: "Please wait",
-          description: "Payment gateway is loading...",
-        });
-        return false;
-      }
-
       setIsLoading(true);
       triggerHaptic("medium");
+
+      try {
+        // Lazy load Razorpay script when payment is initiated
+        if (!scriptLoadPromise.current) {
+          scriptLoadPromise.current = loadRazorpayScript();
+        }
+        
+        await scriptLoadPromise.current;
+      } catch (error) {
+        console.error("Failed to load Razorpay:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load payment gateway. Please try again.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return false;
+      }
 
       try {
         // Create order via edge function
@@ -110,6 +117,7 @@ export function useRazorpay() {
             description: "Failed to create payment order. Please try again.",
             variant: "destructive",
           });
+          setIsLoading(false);
           return false;
         }
 
@@ -189,12 +197,12 @@ export function useRazorpay() {
         return false;
       }
     },
-    [scriptLoaded]
+    []
   );
 
   return {
     initiatePayment,
     isLoading,
-    isReady: scriptLoaded,
+    isReady: true, // Always ready since we lazy load
   };
 }
