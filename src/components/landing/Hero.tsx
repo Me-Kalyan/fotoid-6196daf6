@@ -1,9 +1,21 @@
 import { motion } from "framer-motion";
 import { Shield, Zap, Lock } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { NeoButton } from "@/components/ui/neo-button";
 import { NeoBadge } from "@/components/ui/neo-badge";
 
 const Hero = () => {
+  const navigate = useNavigate();
+
+  const handleCreatePhoto = () => {
+    navigate("/editor");
+  };
+
+  const handleHowItWorks = () => {
+    const element = document.getElementById("how-it-works");
+    element?.scrollIntoView({ behavior: "smooth" });
+  };
+
   return (
     <section className="relative overflow-hidden border-b-2 border-primary bg-background px-4 py-16 md:py-24">
       {/* Background grid pattern */}
@@ -44,9 +56,9 @@ const Hero = () => {
             Passport photos
             <br />
             <span className="relative">
-              that don't{" "}
+              made{" "}
               <span className="relative inline-block">
-                <span className="relative z-10">suck.</span>
+                <span className="relative z-10">easy.</span>
                 <motion.span
                   className="absolute -bottom-1 left-0 h-4 w-full bg-brand md:-bottom-2 md:h-6"
                   initial={{ scaleX: 0 }}
@@ -76,11 +88,11 @@ const Hero = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <NeoButton size="xl" variant="default">
+            <NeoButton size="xl" variant="default" onClick={handleCreatePhoto}>
               <Zap className="h-5 w-5" />
               Create Your Photo
             </NeoButton>
-            <NeoButton size="xl" variant="outline">
+            <NeoButton size="xl" variant="outline" onClick={handleHowItWorks}>
               See How It Works
             </NeoButton>
           </motion.div>

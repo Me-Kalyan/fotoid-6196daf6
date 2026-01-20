@@ -1,8 +1,25 @@
 import { motion } from "framer-motion";
 import { Shield, Heart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 const Footer = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleScrollLink = (sectionId: string) => {
+    if (location.pathname !== "/") {
+      navigate("/");
+      // Wait for navigation then scroll
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        element?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    } else {
+      const element = document.getElementById(sectionId);
+      element?.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <footer className="border-t-2 border-primary bg-primary px-4 py-12 text-primary-foreground">
       <div className="container mx-auto max-w-6xl">
@@ -31,19 +48,28 @@ const Footer = () => {
             <h4 className="font-heading font-bold">Product</h4>
             <ul className="mt-3 space-y-2 text-sm text-primary-foreground/80">
               <li>
-                <a href="#" className="hover:text-primary-foreground hover:underline">
+                <button 
+                  onClick={() => handleScrollLink("how-it-works")}
+                  className="hover:text-primary-foreground hover:underline"
+                >
                   How it Works
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="hover:text-primary-foreground hover:underline">
+                <button 
+                  onClick={() => handleScrollLink("pricing")}
+                  className="hover:text-primary-foreground hover:underline"
+                >
                   Pricing
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="hover:text-primary-foreground hover:underline">
+                <button 
+                  onClick={() => handleScrollLink("countries")}
+                  className="hover:text-primary-foreground hover:underline"
+                >
                   Supported Countries
-                </a>
+                </button>
               </li>
             </ul>
           </div>

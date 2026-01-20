@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef } from "react";
-import { removeBackground } from "@imgly/background-removal";
 
 export type ProcessingStep = 
   | "idle"
@@ -76,8 +75,10 @@ export const useImageProcessing = () => {
         throw new Error("No face detected in the image. Please upload a photo with a clear, visible face.");
       }
 
-      // Step 3: Remove background
+      // Step 3: Remove background (dynamic import to avoid module loading issues)
       updateProgress("removing-background", 50, "Removing background...");
+      
+      const { removeBackground } = await import("@imgly/background-removal");
       
       const blob = await removeBackground(file, {
         progress: (key, current, total) => {
