@@ -51,6 +51,15 @@ export const BrushCanvas = ({
   
   const dragStartRef = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  
+  // Touch gesture tracking for pinch-to-zoom
+  const touchStartRef = useRef<{
+    touches: { x: number; y: number }[];
+    initialDistance: number;
+    initialZoom: number;
+    initialPosition: { x: number; y: number };
+    center: { x: number; y: number };
+  } | null>(null);
 
   // Load images
   useEffect(() => {
@@ -243,8 +252,46 @@ export const BrushCanvas = ({
     ctx.putImageData(resultData, 0, 0);
   }, [canvasSize]);
 
+  // Calculate distance between two touch points
+  const getTouchDistance = (touches: React.TouchList): number => {
+    if (touches.length < 2) return 0;
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // Calculate center point between two touches
+  const getTouchCenter = (touches: React.TouchList): { x: number; y: number } => {
+    if (touches.length < 2) {
+      return { x: touches[0].clientX, y: touches[0].clientY };
+    }
+    return {
+      x: (touches[0].clientX + touches[1].clientX) / 2,
+      y: (touches[0].clientY + touches[1].clientY) / 2,
+    };
+  };
+
   // Mouse/touch handlers
   const handlePointerDown = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    // Handle touch events
+    if ("touches" in e) {
+      if (e.touches.length === 2) {
+        // Pinch gesture start
+        e.preventDefault();
+        const distance = getTouchDistance(e.touches);
+        const center = getTouchCenter(e.touches);
+        
+        touchStartRef.current = {
+          touches: Array.from(e.touches).map(t => ({ x: t.clientX, y: t.clientY })),
+          initialDistance: distance,
+          initialZoom: zoom,
+          initialPosition: { ...position },
+          center,
+        };
+        return;
+      }
+    }
+    
     if (activeTool === "eraser" || activeTool === "restore") {
       setIsDrawing(true);
       const coords = getCanvasCoords(e);
@@ -262,9 +309,30 @@ export const BrushCanvas = ({
         posY: position.y,
       };
     }
-  }, [activeTool, getCanvasCoords, position]);
+  }, [activeTool, getCanvasCoords, position, zoom]);
 
   const handlePointerMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    // Handle pinch-to-zoom
+    if ("touches" in e && e.touches.length === 2 && touchStartRef.current) {
+      e.preventDefault();
+      const currentDistance = getTouchDistance(e.touches);
+      const scale = currentDistance / touchStartRef.current.initialDistance;
+      const newZoom = Math.min(200, Math.max(50, touchStartRef.current.initialZoom * scale));
+      
+      setZoom(newZoom);
+      
+      // Also handle pan during pinch
+      const currentCenter = getTouchCenter(e.touches);
+      const deltaX = currentCenter.x - touchStartRef.current.center.x;
+      const deltaY = currentCenter.y - touchStartRef.current.center.y;
+      
+      setPosition({
+        x: touchStartRef.current.initialPosition.x + deltaX,
+        y: touchStartRef.current.initialPosition.y + deltaY,
+      });
+      return;
+    }
+    
     if (isDrawing && (activeTool === "eraser" || activeTool === "restore")) {
       const coords = getCanvasCoords(e);
       if (coords && lastPointRef.current) {
@@ -281,9 +349,14 @@ export const BrushCanvas = ({
         y: dragStartRef.current.posY + deltaY,
       });
     }
-  }, [isDrawing, isDragging, activeTool, getCanvasCoords, drawStroke]);
+  }, [isDrawing, isDragging, activeTool, getCanvasCoords, drawStroke, setZoom]);
 
-  const handlePointerUp = useCallback(() => {
+  const handlePointerUp = useCallback((e?: React.MouseEvent | React.TouchEvent) => {
+    // Check if ending pinch gesture
+    if (e && "touches" in e && e.touches.length < 2) {
+      touchStartRef.current = null;
+    }
+    
     if (isDrawing) {
       // Push to history after stroke ends
       const canvas = canvasRef.current;
@@ -329,7 +402,7 @@ export const BrushCanvas = ({
     <div className="flex flex-col items-center gap-4">
       {/* Canvas Container */}
       <motion.div
-        className="relative border-3 border-primary shadow-brutal-lg overflow-hidden"
+        className="relative border-3 border-primary shadow-brutal-lg overflow-hidden touch-none"
         style={{ 
           backgroundColor: bgColorMap[bgColor],
           cursor: getCursor(),
@@ -339,7 +412,7 @@ export const BrushCanvas = ({
         onMouseDown={handlePointerDown}
         onMouseMove={handlePointerMove}
         onMouseUp={handlePointerUp}
-        onMouseLeave={handlePointerUp}
+        onMouseLeave={() => handlePointerUp()}
         onTouchStart={handlePointerDown}
         onTouchMove={handlePointerMove}
         onTouchEnd={handlePointerUp}
@@ -482,7 +555,7 @@ export const BrushCanvas = ({
       <p className="text-xs text-muted-foreground text-center">
         {activeTool === "eraser" || activeTool === "restore" 
           ? `${activeTool === "eraser" ? "Eraser" : "Restore"}: Click and drag to ${activeTool === "eraser" ? "reveal original background" : "restore transparent background"}`
-          : "Drag to reposition • Scroll to zoom • Use toolbar to touch up edges"
+          : "Drag to pan • Pinch to zoom • Use toolbar to touch up edges"
         }
       </p>
     </div>
