@@ -3,7 +3,7 @@
  * Creates tiled grids of passport photos for printing at standard photo sizes
  */
 
-export type SheetSize = "4x6" | "a4";
+export type SheetSize = "4x6" | "5x7" | "a4" | "letter";
 export type FileFormat = "jpg" | "png";
 
 export interface SheetConfig {
@@ -31,9 +31,27 @@ const SHEET_CONFIGS: Record<SheetSize, SheetConfig> = {
     paddingInches: 0.1,
     marginInches: 0.1,
   },
+  "5x7": {
+    widthInches: 7,
+    heightInches: 5,
+    dpi: 300,
+    photoWidthInches: 2,
+    photoHeightInches: 2,
+    paddingInches: 0.1,
+    marginInches: 0.15,
+  },
   "a4": {
     widthInches: 8.27, // A4 width
     heightInches: 11.69, // A4 height
+    dpi: 300,
+    photoWidthInches: 2,
+    photoHeightInches: 2,
+    paddingInches: 0.15,
+    marginInches: 0.25,
+  },
+  "letter": {
+    widthInches: 11, // Letter width (landscape for more photos)
+    heightInches: 8.5, // Letter height
     dpi: 300,
     photoWidthInches: 2,
     photoHeightInches: 2,

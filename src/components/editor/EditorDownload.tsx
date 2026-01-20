@@ -25,7 +25,7 @@ interface EditorDownloadProps {
   onBack: () => void;
 }
 
-type OutputFormat = "single" | "sheet-4x6" | "sheet-a4";
+type OutputFormat = "single" | "sheet-4x6" | "sheet-5x7" | "sheet-a4" | "sheet-letter";
 type FileFormat = "jpg" | "png";
 
 interface OutputOption {
@@ -47,19 +47,35 @@ const outputOptions: OutputOption[] = [
   },
   {
     id: "sheet-4x6",
-    title: "4×6 Print Sheet",
-    description: "Perfect for drugstore printing",
+    title: "4×6 Sheet",
+    description: "Drugstore printing",
     icon: Grid3X3,
     photos: 4,
     sheetSize: "4x6",
   },
   {
+    id: "sheet-5x7",
+    title: "5×7 Sheet",
+    description: "6 photos, common size",
+    icon: Grid3X3,
+    photos: 6,
+    sheetSize: "5x7",
+  },
+  {
     id: "sheet-a4",
-    title: "A4 Print Sheet",
-    description: "Full page with 8+ photos",
+    title: "A4 Sheet",
+    description: "Full page, 8+ photos",
     icon: Printer,
     photos: 8,
     sheetSize: "a4",
+  },
+  {
+    id: "sheet-letter",
+    title: "Letter Sheet",
+    description: "US Letter (8.5×11)",
+    icon: Printer,
+    photos: 10,
+    sheetSize: "letter",
   },
 ];
 
