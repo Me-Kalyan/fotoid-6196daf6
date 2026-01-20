@@ -68,24 +68,33 @@ const Header = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <a
-            href="#how-it-works"
+          <button
+            onClick={() => {
+              const element = document.getElementById("how-it-works");
+              element?.scrollIntoView({ behavior: "smooth" });
+            }}
             className="font-heading text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
           >
             How it Works
-          </a>
-          <a
-            href="#pricing"
+          </button>
+          <button
+            onClick={() => {
+              const element = document.getElementById("pricing");
+              element?.scrollIntoView({ behavior: "smooth" });
+            }}
             className="font-heading text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
           >
             Pricing
-          </a>
-          <a
-            href="#countries"
+          </button>
+          <button
+            onClick={() => {
+              const element = document.getElementById("countries");
+              element?.scrollIntoView({ behavior: "smooth" });
+            }}
             className="font-heading text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
           >
             Countries
-          </a>
+          </button>
         </motion.nav>
 
         {/* Desktop CTA / User Menu */}
