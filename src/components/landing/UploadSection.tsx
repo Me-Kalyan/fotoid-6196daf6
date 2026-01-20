@@ -49,12 +49,13 @@ const UploadSection = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          <label className="flex items-center gap-2 font-heading font-bold">
+          <label htmlFor="country-select" className="flex items-center gap-2 font-heading font-bold">
             <Globe className="h-5 w-5" />
             Select Country
           </label>
           <div className="relative w-full max-w-sm">
             <select
+              id="country-select"
               className="w-full appearance-none border-2 border-primary bg-background px-4 py-3 pr-10 font-heading font-bold shadow-brutal focus:outline-none focus:ring-2 focus:ring-brand"
               defaultValue="US"
             >
