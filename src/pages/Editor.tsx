@@ -115,6 +115,7 @@ const EditorContent = () => {
             >
             <EditorDownload
                 selectedCountry={selectedCountry}
+                bgColor={bgColor}
                 onBack={handleBackToReview}
               />
             </motion.div>
