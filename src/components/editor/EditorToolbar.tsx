@@ -9,12 +9,11 @@ import {
   Hand,
   MousePointer2
 } from "lucide-react";
-import { useState } from "react";
-
-type Tool = "select" | "pan" | "eraser" | "restore";
+import { useImageProcessingContext } from "@/contexts/ImageProcessingContext";
+import type { BrushTool } from "@/hooks/useCanvasBrush";
 
 interface ToolButton {
-  id: Tool;
+  id: BrushTool;
   icon: React.ElementType;
   label: string;
   shortcut: string;
@@ -28,10 +27,26 @@ const tools: ToolButton[] = [
 ];
 
 export const EditorToolbar = () => {
-  const [activeTool, setActiveTool] = useState<Tool>("select");
-  const [brushSize, setBrushSize] = useState(20);
-  const [canUndo, setCanUndo] = useState(true);
-  const [canRedo, setCanRedo] = useState(false);
+  const {
+    activeTool,
+    setActiveTool,
+    brushSize,
+    setBrushSize,
+    zoom,
+    setZoom,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+  } = useImageProcessingContext();
+
+  const handleUndo = () => {
+    undo();
+  };
+
+  const handleRedo = () => {
+    redo();
+  };
 
   return (
     <div className="border-b-3 border-primary bg-background px-4 py-2">
@@ -77,7 +92,7 @@ export const EditorToolbar = () => {
         {/* Center: Undo/Redo */}
         <div className="flex items-center gap-1">
           <motion.button
-            onClick={() => console.log("Undo")}
+            onClick={handleUndo}
             disabled={!canUndo}
             className={`p-2.5 border-2 border-primary transition-all ${
               canUndo ? "hover:bg-secondary" : "opacity-40 cursor-not-allowed"
@@ -89,7 +104,7 @@ export const EditorToolbar = () => {
           </motion.button>
 
           <motion.button
-            onClick={() => console.log("Redo")}
+            onClick={handleRedo}
             disabled={!canRedo}
             className={`p-2.5 border-2 border-primary transition-all ${
               canRedo ? "hover:bg-secondary" : "opacity-40 cursor-not-allowed"
@@ -104,7 +119,7 @@ export const EditorToolbar = () => {
         {/* Right: Zoom */}
         <div className="flex items-center gap-1">
           <motion.button
-            onClick={() => console.log("Zoom out")}
+            onClick={() => setZoom(Math.max(50, zoom - 10))}
             className="p-2.5 border-2 border-primary hover:bg-secondary transition-all"
             whileTap={{ scale: 0.95 }}
             title="Zoom Out (-)"
@@ -112,10 +127,10 @@ export const EditorToolbar = () => {
             <ZoomOut className="w-5 h-5" />
           </motion.button>
 
-          <span className="font-mono text-sm w-12 text-center">100%</span>
+          <span className="font-mono text-sm w-12 text-center">{zoom}%</span>
 
           <motion.button
-            onClick={() => console.log("Zoom in")}
+            onClick={() => setZoom(Math.min(200, zoom + 10))}
             className="p-2.5 border-2 border-primary hover:bg-secondary transition-all"
             whileTap={{ scale: 0.95 }}
             title="Zoom In (+)"

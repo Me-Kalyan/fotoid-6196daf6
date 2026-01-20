@@ -48,6 +48,10 @@
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 45%;
 
+    /* Success */
+    --success: 142 76% 36%;              /* Green for positive indicators */
+    --success-foreground: 0 0% 100%;
+
     /* Destructive */
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -106,6 +110,9 @@
 
     --muted: 0 0% 15%;
     --muted-foreground: 0 0% 65%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
 
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 100%;
