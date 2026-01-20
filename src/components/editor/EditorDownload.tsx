@@ -30,6 +30,7 @@ interface EditorDownloadProps {
 
 type OutputFormat = "single" | "sheet-4x6" | "sheet-5x7" | "sheet-a4" | "sheet-letter";
 type FileFormat = "jpg" | "png";
+type JpgQuality = 70 | 80 | 90 | 100;
 
 interface OutputOption {
   id: OutputFormat;
@@ -92,6 +93,7 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
   const [selectedOutput, setSelectedOutput] = useState<OutputFormat>("single");
   const [fileFormat, setFileFormat] = useState<FileFormat>("jpg");
   const [dpi, setDpi] = useState<number>(300);
+  const [jpgQuality, setJpgQuality] = useState<JpgQuality>(90);
   const [isDownloading, setIsDownloading] = useState(false);
   
   const { processedImage } = useImageProcessingContext();
@@ -291,6 +293,49 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
               </button>
             </div>
           </motion.div>
+
+          {/* JPG Quality Slider */}
+          {fileFormat === "jpg" && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.22 }}
+              className="mb-8"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-heading font-bold text-lg">Compression Quality</h2>
+                <span className="text-sm font-bold text-brand">{jpgQuality}%</span>
+              </div>
+              
+              <div className="p-4 border-3 border-primary bg-card">
+                <div className="grid grid-cols-4 gap-2 mb-3">
+                  {([70, 80, 90, 100] as JpgQuality[]).map((quality) => (
+                    <button
+                      key={quality}
+                      onClick={() => setJpgQuality(quality)}
+                      className={`py-2 px-3 border-2 text-sm font-bold transition-all ${
+                        jpgQuality === quality
+                          ? "border-brand bg-brand text-brand-foreground"
+                          : "border-primary hover:bg-secondary"
+                      }`}
+                    >
+                      {quality}%
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="text-xs text-muted-foreground border-t border-dashed border-primary/30 pt-3">
+                  {jpgQuality === 100 
+                    ? "✓ Maximum quality, larger file size (~2-3 MB)" 
+                    : jpgQuality === 90 
+                      ? "✓ Recommended - great quality, smaller file (~500KB-1MB)"
+                      : jpgQuality === 80
+                        ? "○ Good balance of quality and size (~300-500KB)"
+                        : "○ Smallest file size, may show compression artifacts (~150-300KB)"}
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* DPI Quality Slider */}
           <motion.div
