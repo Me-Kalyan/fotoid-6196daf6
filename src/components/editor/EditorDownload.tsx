@@ -8,10 +8,13 @@ import {
   Check,
   Sparkles,
   Lock,
-  AlertTriangle
+  AlertTriangle,
+  Monitor,
+  PrinterCheck
 } from "lucide-react";
 import { useState, useCallback } from "react";
 import { NeoButton } from "@/components/ui/neo-button";
+import { Slider } from "@/components/ui/slider";
 import { PrintSheetPreview } from "./PrintSheetPreview";
 import { useImageProcessingContext } from "@/contexts/ImageProcessingContext";
 import { generatePrintSheet, downloadSheet, type SheetSize } from "@/utils/printSheetGenerator";
@@ -88,6 +91,7 @@ const bgColorHex = {
 export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownloadProps) => {
   const [selectedOutput, setSelectedOutput] = useState<OutputFormat>("single");
   const [fileFormat, setFileFormat] = useState<FileFormat>("jpg");
+  const [dpi, setDpi] = useState<number>(300);
   const [isDownloading, setIsDownloading] = useState(false);
   
   const { processedImage } = useImageProcessingContext();
@@ -136,7 +140,8 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
         const sheet = await generatePrintSheet(
           processedImage.processedImage,
           sheetSize,
-          bgColorHex[bgColor]
+          bgColorHex[bgColor],
+          dpi
         );
         
         const filename = `passport-sheet-${sheetSize}-${countryCode}-${timestamp}.${fileFormat}`;
@@ -166,7 +171,14 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
     } finally {
       setIsDownloading(false);
     }
-  }, [processedImage, selectedOutput, selectedOption, fileFormat, selectedCountry, bgColor, canDownloadFree, recordDownload, toast]);
+  }, [processedImage, selectedOutput, selectedOption, fileFormat, selectedCountry, bgColor, dpi, canDownloadFree, recordDownload, toast]);
+
+  const getDpiLabel = (value: number) => {
+    if (value <= 72) return "Web (72 DPI)";
+    if (value <= 150) return "Medium (150 DPI)";
+    if (value <= 200) return "Good (200 DPI)";
+    return "Print (300 DPI)";
+  };
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row">
@@ -277,6 +289,48 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
                   Lossless quality
                 </p>
               </button>
+            </div>
+          </motion.div>
+
+          {/* DPI Quality Slider */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mb-8"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-heading font-bold text-lg">Output Quality</h2>
+              <span className="text-sm font-bold text-brand">{getDpiLabel(dpi)}</span>
+            </div>
+            
+            <div className="p-4 border-3 border-primary bg-card">
+              <div className="flex items-center gap-4 mb-3">
+                <Monitor className="w-5 h-5 text-muted-foreground" />
+                <Slider
+                  value={[dpi]}
+                  onValueChange={(value) => setDpi(value[0])}
+                  min={72}
+                  max={300}
+                  step={1}
+                  className="flex-1"
+                />
+                <PrinterCheck className="w-5 h-5 text-brand" />
+              </div>
+              
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>72 DPI</span>
+                <span>150 DPI</span>
+                <span>300 DPI</span>
+              </div>
+              
+              <p className="text-xs text-muted-foreground mt-3 border-t border-dashed border-primary/30 pt-3">
+                {dpi >= 200 
+                  ? "✓ Great for professional printing" 
+                  : dpi >= 150 
+                    ? "○ Suitable for home printing" 
+                    : "○ Best for web/digital use only"}
+              </p>
             </div>
           </motion.div>
 
