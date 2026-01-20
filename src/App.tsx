@@ -9,6 +9,7 @@ import Editor from "./pages/Editor";
 import Auth from "./pages/Auth";
 import Install from "./pages/Install";
 import Dashboard from "./pages/Dashboard";
+import Subscription from "./pages/Subscription";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/editor" element={<Editor />} />
             <Route path="/install" element={<Install />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/subscription" element={<Subscription />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
