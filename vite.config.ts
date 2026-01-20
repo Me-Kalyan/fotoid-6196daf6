@@ -147,12 +147,9 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    exclude: ["@imgly/background-removal", "onnxruntime-web", "onnxruntime-web/webgpu"],
+    exclude: ["@imgly/background-removal"],
   },
   build: {
     sourcemap: true,
-    rollupOptions: {
-      external: [/^onnxruntime-web.*/, "onnxruntime-web/webgpu"],
-    },
   },
 }));
