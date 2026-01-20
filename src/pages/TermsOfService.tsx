@@ -28,9 +28,9 @@ const TermsOfService = () => {
           <section>
             <h2 className="font-heading text-2xl font-bold text-foreground">2. Description of Service</h2>
             <p className="mt-3">
-              FotoID provides an online tool for creating passport and ID photos. Our service processes photos 
-              entirely on your device, removing backgrounds and formatting images to meet official requirements 
-              for various countries.
+              FotoID provides an online tool for converting photos into passport-size format. Our service processes 
+              photos entirely on your device, removing backgrounds and resizing images to standard passport photo 
+              dimensions.
             </p>
           </section>
 
@@ -67,11 +67,11 @@ const TermsOfService = () => {
           </section>
 
           <section>
-            <h2 className="font-heading text-2xl font-bold text-foreground">6. Photo Quality Disclaimer</h2>
+            <h2 className="font-heading text-2xl font-bold text-foreground">6. Photo Disclaimer</h2>
             <p className="mt-3">
-              While we strive to meet official requirements, we cannot guarantee that photos produced by our 
-              service will be accepted by all government agencies. Photo acceptance ultimately depends on the 
-              issuing authority. We recommend reviewing your country's specific requirements.
+              FotoID is a photo conversion tool that resizes and formats photos to standard passport dimensions. 
+              We do not guarantee acceptance of photos for any specific purpose. Users are responsible for 
+              ensuring photos meet their intended use requirements.
             </p>
           </section>
 

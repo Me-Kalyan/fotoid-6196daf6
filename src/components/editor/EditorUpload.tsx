@@ -23,7 +23,7 @@ export const EditorUpload = ({ onFileSelect, error }: EditorUploadProps) => {
           </h1>
           <p className="text-muted-foreground text-lg max-w-xl mx-auto">
             Drop a photo or take one with your camera. We'll handle the rest — 
-            background removal, face centering, and compliance checking.
+            background removal, face centering, and proper sizing.
           </p>
         </motion.div>
 

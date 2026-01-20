@@ -89,7 +89,7 @@ const HowItWorks = () => {
           <NeoCard className="mx-auto max-w-2xl bg-background">
             <NeoCardHeader>
               <NeoCardTitle className="text-center">
-                AI Compliance Checklist
+                AI Photo Checklist
               </NeoCardTitle>
             </NeoCardHeader>
             <NeoCardContent>
