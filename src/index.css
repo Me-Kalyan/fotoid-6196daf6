@@ -16,7 +16,7 @@
 
     /* Brand Colors */
     --brand: 18 100% 50%;              /* #FF4F00 International Orange */
-    --brand-foreground: 0 0% 100%;
+    --brand-foreground: 0 0% 0%;       /* Black text for WCAG AA contrast */
     
     --brand-alt: 330 100% 50%;         /* #FF0080 Hot Pink (alternative) */
     --brand-alt-foreground: 0 0% 100%;
@@ -85,7 +85,7 @@
     --foreground: 0 0% 100%;
 
     --brand: 18 100% 50%;
-    --brand-foreground: 0 0% 100%;
+    --brand-foreground: 0 0% 0%;       /* Black text for WCAG AA contrast */
     
     --brand-alt: 330 100% 50%;
     --brand-alt-foreground: 0 0% 100%;
