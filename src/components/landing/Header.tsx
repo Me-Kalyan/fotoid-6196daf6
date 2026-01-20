@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Zap, User, LogOut } from "lucide-react";
+import { Zap, User, LogOut, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { NeoButton } from "@/components/ui/neo-button";
 import { NeoBadge } from "@/components/ui/neo-badge";
@@ -112,6 +112,13 @@ const Header = () => {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="border-2 border-primary">
+                <DropdownMenuItem 
+                  onClick={() => navigate('/dashboard')}
+                  className="font-heading cursor-pointer"
+                >
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  Dashboard
+                </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => navigate('/editor')}
                   className="font-heading cursor-pointer"
