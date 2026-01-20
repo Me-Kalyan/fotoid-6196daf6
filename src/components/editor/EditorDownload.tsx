@@ -6,13 +6,17 @@ import {
   Printer,
   ArrowLeft,
   Check,
-  Sparkles
+  Sparkles,
+  Lock,
+  AlertTriangle
 } from "lucide-react";
 import { useState, useCallback } from "react";
 import { NeoButton } from "@/components/ui/neo-button";
 import { PrintSheetPreview } from "./PrintSheetPreview";
 import { useImageProcessingContext } from "@/contexts/ImageProcessingContext";
 import { generatePrintSheet, downloadSheet, type SheetSize } from "@/utils/printSheetGenerator";
+import { useDownloadHistory } from "@/hooks/useDownloadHistory";
+import { useToast } from "@/hooks/use-toast";
 import type { CountryFormat } from "@/pages/Editor";
 
 interface EditorDownloadProps {
@@ -71,11 +75,28 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
   const [isDownloading, setIsDownloading] = useState(false);
   
   const { processedImage } = useImageProcessingContext();
+  const { 
+    freeDownloadsRemaining, 
+    canDownloadFree, 
+    recordDownload, 
+    isLoading: historyLoading 
+  } = useDownloadHistory();
+  const { toast } = useToast();
   
   const selectedOption = outputOptions.find(o => o.id === selectedOutput);
 
   const handleDownload = useCallback(async () => {
     if (!processedImage?.processedImage) return;
+    
+    // Check if user can download for free
+    if (!canDownloadFree) {
+      toast({
+        title: "Free downloads exhausted",
+        description: "Upgrade to Pro for unlimited downloads or purchase a single download.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsDownloading(true);
     
@@ -106,13 +127,30 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
         downloadSheet(sheet.dataUrl, filename);
       }
       
+      // Record the download
+      recordDownload({
+        photoType: selectedOption?.id || 'single',
+        countryCode: selectedCountry.code,
+        isPaid: false,
+      });
+      
+      toast({
+        title: "Download complete!",
+        description: `Your ${selectedOption?.title || 'photo'} has been downloaded.`,
+      });
+      
       console.log("Download complete:", { selectedOutput, fileFormat, selectedCountry });
     } catch (error) {
       console.error("Download failed:", error);
+      toast({
+        title: "Download failed",
+        description: "Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsDownloading(false);
     }
-  }, [processedImage, selectedOutput, selectedOption, fileFormat, selectedCountry, bgColor]);
+  }, [processedImage, selectedOutput, selectedOption, fileFormat, selectedCountry, bgColor, canDownloadFree, recordDownload, toast]);
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row">
@@ -233,16 +271,26 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
             transition={{ delay: 0.3 }}
           >
             <NeoButton
-              variant="default"
+              variant={canDownloadFree ? "default" : "secondary"}
               size="xl"
               onClick={handleDownload}
-              disabled={isDownloading || !processedImage}
+              disabled={isDownloading || !processedImage || historyLoading || !canDownloadFree}
               className="w-full"
             >
-              {isDownloading ? (
+              {historyLoading ? (
+                <>
+                  <Sparkles className="w-5 h-5 animate-spin" />
+                  Loading...
+                </>
+              ) : isDownloading ? (
                 <>
                   <Sparkles className="w-5 h-5 animate-spin" />
                   Generating...
+                </>
+              ) : !canDownloadFree ? (
+                <>
+                  <Lock className="w-5 h-5" />
+                  Upgrade to Download
                 </>
               ) : (
                 <>
@@ -262,14 +310,34 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="mt-6 p-3 border-2 border-dashed border-primary bg-highlight/10 text-center"
+            className={`mt-6 p-3 border-2 border-dashed text-center ${
+              canDownloadFree 
+                ? "border-primary bg-highlight/10" 
+                : "border-destructive bg-destructive/10"
+            }`}
           >
-            <p className="font-bold text-sm">
-              <span className="text-brand">2</span> free downloads remaining
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Upgrade to Pro for unlimited downloads
-            </p>
+            {canDownloadFree ? (
+              <>
+                <p className="font-bold text-sm">
+                  <span className="text-brand">{freeDownloadsRemaining}</span> free download{freeDownloadsRemaining !== 1 ? 's' : ''} remaining
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Upgrade to Pro for unlimited downloads
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <AlertTriangle className="w-4 h-4 text-destructive" />
+                  <p className="font-bold text-sm text-destructive">
+                    Free downloads exhausted
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Upgrade to Pro for unlimited downloads
+                </p>
+              </>
+            )}
           </motion.div>
         </div>
       </div>

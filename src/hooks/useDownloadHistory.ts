@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFingerprint } from './useFingerprint';
 
 const FREE_DOWNLOAD_LIMIT = 2;
 
@@ -11,13 +12,16 @@ export interface DownloadRecord {
   photo_type: string | null;
   country_code: string | null;
   is_paid: boolean | null;
+  fingerprint: string | null;
 }
 
 export const useDownloadHistory = () => {
   const { user } = useAuth();
+  const { fingerprint, isLoading: fingerprintLoading } = useFingerprint();
   const queryClient = useQueryClient();
 
-  const { data: downloads = [], isLoading } = useQuery({
+  // Query user's own downloads (for display purposes)
+  const { data: downloads = [], isLoading: downloadsLoading } = useQuery({
     queryKey: ['download-history', user?.id],
     queryFn: async () => {
       if (!user) return [];
@@ -34,9 +38,34 @@ export const useDownloadHistory = () => {
     enabled: !!user,
   });
 
-  const freeDownloadsUsed = downloads.filter(d => !d.is_paid).length;
-  const freeDownloadsRemaining = Math.max(0, FREE_DOWNLOAD_LIMIT - freeDownloadsUsed);
-  const canDownloadFree = freeDownloadsRemaining > 0;
+  // Query fingerprint-based limits (across ALL users with same fingerprint)
+  const { data: fingerprintLimit } = useQuery({
+    queryKey: ['fingerprint-limit', fingerprint],
+    queryFn: async () => {
+      if (!fingerprint) return { total_downloads: 0, can_download: true };
+      
+      const { data, error } = await supabase
+        .rpc('check_fingerprint_limit', { 
+          p_fingerprint: fingerprint, 
+          p_limit: FREE_DOWNLOAD_LIMIT 
+        });
+
+      if (error) {
+        console.error('Fingerprint check error:', error);
+        return { total_downloads: 0, can_download: true };
+      }
+      
+      // Returns array with single row
+      const result = data?.[0] || { total_downloads: 0, can_download: true };
+      return result;
+    },
+    enabled: !!fingerprint,
+  });
+
+  // Calculate remaining based on fingerprint (cross-account protection)
+  const fingerprintDownloadsUsed = Number(fingerprintLimit?.total_downloads || 0);
+  const freeDownloadsRemaining = Math.max(0, FREE_DOWNLOAD_LIMIT - fingerprintDownloadsUsed);
+  const canDownloadFree = fingerprintLimit?.can_download ?? true;
 
   const recordDownloadMutation = useMutation({
     mutationFn: async ({ photoType, countryCode, isPaid }: { 
@@ -53,22 +82,25 @@ export const useDownloadHistory = () => {
           photo_type: photoType || 'passport',
           country_code: countryCode,
           is_paid: isPaid || false,
+          fingerprint: fingerprint,
         });
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['download-history', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['fingerprint-limit', fingerprint] });
     },
   });
 
   return {
     downloads,
-    isLoading,
-    freeDownloadsUsed,
+    isLoading: downloadsLoading || fingerprintLoading,
+    freeDownloadsUsed: fingerprintDownloadsUsed,
     freeDownloadsRemaining,
     canDownloadFree,
     freeDownloadLimit: FREE_DOWNLOAD_LIMIT,
+    fingerprint,
     recordDownload: recordDownloadMutation.mutate,
     isRecording: recordDownloadMutation.isPending,
   };
