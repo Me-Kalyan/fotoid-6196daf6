@@ -4,6 +4,7 @@ import { Zap, User, LogOut, LayoutDashboard } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { NeoButton } from "@/components/ui/neo-button";
 import { NeoBadge } from "@/components/ui/neo-badge";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/contexts/AuthContext";
 import { MobileMenu } from "./MobileMenu";
 import {
@@ -104,6 +105,8 @@ const Header = () => {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4, delay: 0.2 }}
         >
+          <ThemeToggle />
+          
           <NeoBadge variant="highlight" size="sm">
             2 Free
           </NeoBadge>
