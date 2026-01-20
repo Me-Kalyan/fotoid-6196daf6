@@ -81,7 +81,7 @@ export const useImageProcessing = () => {
       const { removeBackground } = await import("@imgly/background-removal");
       
       const blob = await removeBackground(file, {
-        publicPath: "https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/dist/",
+        model: "isnet_quint8",
         progress: (key, current, total) => {
           const bgProgress = 50 + (current / total) * 30;
           updateProgress("removing-background", bgProgress, `Removing background... ${Math.round((current / total) * 100)}%`);
