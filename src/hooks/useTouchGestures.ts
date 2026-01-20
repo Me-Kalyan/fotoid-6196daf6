@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { triggerHaptic } from "./useHapticFeedback";
 
 interface TouchGestureState {
   zoom: number;
@@ -10,6 +11,7 @@ interface UseTouchGesturesOptions {
   maxZoom?: number;
   initialZoom?: number;
   onZoomChange?: (zoom: number) => void;
+  enableHaptics?: boolean;
 }
 
 export const useTouchGestures = ({
@@ -17,6 +19,7 @@ export const useTouchGestures = ({
   maxZoom = 200,
   initialZoom = 100,
   onZoomChange,
+  enableHaptics = true,
 }: UseTouchGesturesOptions = {}) => {
   const [zoom, setZoomState] = useState(initialZoom);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -60,8 +63,10 @@ export const useTouchGestures = ({
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2) {
-      // Pinch gesture start
+      // Pinch gesture start - trigger haptic
       e.preventDefault();
+      if (enableHaptics) triggerHaptic("selection");
+      
       const distance = getTouchDistance(e.touches);
       const center = getTouchCenter(e.touches);
       
@@ -82,7 +87,7 @@ export const useTouchGestures = ({
         posY: position.y,
       };
     }
-  }, [zoom, position]);
+  }, [zoom, position, enableHaptics]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     if (e.touches.length === 2 && touchStartRef.current) {
@@ -116,13 +121,15 @@ export const useTouchGestures = ({
   }, [isDragging, setZoom]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length < 2) {
+    if (e.touches.length < 2 && touchStartRef.current) {
+      // End of pinch gesture - trigger haptic
+      if (enableHaptics) triggerHaptic("light");
       touchStartRef.current = null;
     }
     if (e.touches.length === 0) {
       setIsDragging(false);
     }
-  }, []);
+  }, [enableHaptics]);
 
   // Mouse handlers for desktop
   const handleMouseDown = useCallback((e: React.MouseEvent) => {

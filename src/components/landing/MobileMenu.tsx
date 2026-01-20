@@ -4,6 +4,7 @@ import { Menu, X, Zap, User, LogOut, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { NeoButton } from "@/components/ui/neo-button";
+import { useHapticFeedback } from "@/hooks/useHapticFeedback";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -19,8 +20,15 @@ const menuItems = [
 export const MobileMenu = ({ isOpen, onToggle }: MobileMenuProps) => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const haptic = useHapticFeedback();
+
+  const handleToggle = () => {
+    haptic.medium();
+    onToggle();
+  };
 
   const handleNavClick = (href: string) => {
+    haptic.selection();
     onToggle();
     // Small delay for animation
     setTimeout(() => {
@@ -30,6 +38,7 @@ export const MobileMenu = ({ isOpen, onToggle }: MobileMenuProps) => {
   };
 
   const handleAuthAction = () => {
+    haptic.light();
     onToggle();
     if (user) {
       signOut();
@@ -39,6 +48,7 @@ export const MobileMenu = ({ isOpen, onToggle }: MobileMenuProps) => {
   };
 
   const handleCreatePhoto = () => {
+    haptic.success();
     onToggle();
     navigate("/editor");
   };
@@ -48,7 +58,7 @@ export const MobileMenu = ({ isOpen, onToggle }: MobileMenuProps) => {
       {/* Hamburger Button */}
       <motion.button
         className="md:hidden flex items-center justify-center w-12 h-12 border-2 border-primary bg-background touch-manipulation"
-        onClick={onToggle}
+        onClick={handleToggle}
         whileTap={{ scale: 0.95 }}
         aria-label={isOpen ? "Close menu" : "Open menu"}
         aria-expanded={isOpen}
