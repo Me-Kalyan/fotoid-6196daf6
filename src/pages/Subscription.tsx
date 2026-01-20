@@ -20,17 +20,6 @@ import { NeoBadge } from "@/components/ui/neo-badge";
 import { useRazorpay } from "@/hooks/useRazorpay";
 import { format, differenceInDays, isPast } from "date-fns";
 import { toast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 
 interface Profile {
   is_pro: boolean;
@@ -46,7 +35,6 @@ const Subscription = () => {
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -89,39 +77,8 @@ const Subscription = () => {
     }
   };
 
-  const handleCancel = async () => {
-    if (!user) return;
-
-    setCancelling(true);
-    try {
-      // Update profile to remove pro status
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          is_pro: false,
-          pro_expires_at: null,
-        })
-        .eq("user_id", user.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Subscription Cancelled",
-        description: "Your Pro subscription has been cancelled. You'll retain access until the end of your billing period.",
-      });
-
-      await fetchProfile();
-    } catch (error) {
-      console.error("Error cancelling subscription:", error);
-      toast({
-        title: "Error",
-        description: "Failed to cancel subscription. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setCancelling(false);
-    }
-  };
+  // Note: Subscriptions expire automatically - no manual cancellation needed
+  // Users pay for 30 days at a time with no auto-renewal
 
   const proExpiresAt = profile?.pro_expires_at 
     ? new Date(profile.pro_expires_at) 
@@ -258,11 +215,10 @@ const Subscription = () => {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t-2 border-foreground">
+                  <div className="flex flex-col gap-3 pt-4 border-t-2 border-foreground">
                     <NeoButton 
                       onClick={handleRenew}
                       disabled={paymentLoading}
-                      className="flex-1"
                     >
                       {paymentLoading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -274,38 +230,9 @@ const Subscription = () => {
                       )}
                     </NeoButton>
                     
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <NeoButton 
-                          variant="outline"
-                          disabled={cancelling}
-                          className="flex-1"
-                        >
-                          {cancelling ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            "Cancel Subscription"
-                          )}
-                        </NeoButton>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="border-2 border-foreground">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle className="font-heading">Cancel Subscription?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to cancel your Pro subscription? You'll lose access to unlimited downloads and other Pro features immediately.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="border-2 border-foreground">Keep Pro</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={handleCancel}
-                            className="bg-destructive text-destructive-foreground border-2 border-foreground"
-                          >
-                            Yes, Cancel
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <p className="text-xs text-muted-foreground text-center">
+                      No auto-renewal. Your subscription will expire automatically on the date shown above.
+                    </p>
                   </div>
                 </>
               ) : isExpired ? (
