@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           country_code: string | null
           downloaded_at: string
+          fingerprint: string | null
           id: string
           is_paid: boolean | null
           photo_type: string | null
@@ -26,6 +27,7 @@ export type Database = {
         Insert: {
           country_code?: string | null
           downloaded_at?: string
+          fingerprint?: string | null
           id?: string
           is_paid?: boolean | null
           photo_type?: string | null
@@ -34,6 +36,7 @@ export type Database = {
         Update: {
           country_code?: string | null
           downloaded_at?: string
+          fingerprint?: string | null
           id?: string
           is_paid?: boolean | null
           photo_type?: string | null
@@ -73,10 +76,22 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      fingerprint_download_counts: {
+        Row: {
+          fingerprint: string | null
+          free_download_count: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      check_fingerprint_limit: {
+        Args: { p_fingerprint: string; p_limit?: number }
+        Returns: {
+          can_download: boolean
+          total_downloads: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
