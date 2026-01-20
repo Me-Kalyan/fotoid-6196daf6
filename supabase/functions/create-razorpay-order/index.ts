@@ -24,7 +24,6 @@ serve(async (req) => {
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
     if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
-      console.error("Missing Razorpay credentials");
       return new Response(
         JSON.stringify({ error: "Payment gateway not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -35,7 +34,6 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     
     if (!authHeader) {
-      console.error("No authorization header provided");
       return new Response(
         JSON.stringify({ error: "Authentication required" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -43,7 +41,6 @@ serve(async (req) => {
     }
 
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      console.error("Missing Supabase credentials");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -56,7 +53,6 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
-      console.error("Authentication failed:", authError?.message);
       return new Response(
         JSON.stringify({ error: "Authentication required" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -68,7 +64,13 @@ serve(async (req) => {
 
     const { plan_type, amount }: OrderRequest = await req.json();
 
-    console.log(`Creating order for plan: ${plan_type}, amount: ${amount}, user: ${userId}`);
+    // Validate plan_type
+    if (!["single", "pro"].includes(plan_type)) {
+      return new Response(
+        JSON.stringify({ error: "Invalid plan type" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Validate amount based on plan
     const validAmounts: Record<string, number> = {
@@ -77,7 +79,6 @@ serve(async (req) => {
     };
 
     if (!validAmounts[plan_type] || validAmounts[plan_type] !== amount) {
-      console.error(`Invalid amount ${amount} for plan ${plan_type}`);
       return new Response(
         JSON.stringify({ error: "Invalid amount for selected plan" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -105,8 +106,6 @@ serve(async (req) => {
     });
 
     if (!razorpayResponse.ok) {
-      const errorText = await razorpayResponse.text();
-      console.error("Razorpay order creation failed:", errorText);
       return new Response(
         JSON.stringify({ error: "Failed to create payment order" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -114,7 +113,6 @@ serve(async (req) => {
     }
 
     const order = await razorpayResponse.json();
-    console.log(`Order created successfully: ${order.id}`);
 
     return new Response(
       JSON.stringify({
@@ -127,7 +125,6 @@ serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error creating order:", error);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
