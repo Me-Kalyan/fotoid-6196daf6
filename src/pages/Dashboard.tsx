@@ -174,14 +174,9 @@ const Dashboard = () => {
                       variant="outline" 
                       size="sm" 
                       className="w-full"
-                      onClick={() => initiatePayment("pro")}
-                      disabled={paymentLoading}
+                      onClick={() => navigate("/subscription")}
                     >
-                      {paymentLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        "Extend Subscription"
-                      )}
+                      Manage Subscription
                     </NeoButton>
                   </div>
                 ) : (
