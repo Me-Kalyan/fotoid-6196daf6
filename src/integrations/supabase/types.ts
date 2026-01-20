@@ -76,13 +76,7 @@ export type Database = {
       }
     }
     Views: {
-      fingerprint_download_counts: {
-        Row: {
-          fingerprint: string | null
-          free_download_count: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       check_fingerprint_limit: {
