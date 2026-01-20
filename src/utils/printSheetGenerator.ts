@@ -95,18 +95,20 @@ export function calculateGridLayout(config: SheetConfig): { columns: number; row
 export async function generatePrintSheet(
   photoUrl: string,
   sheetSize: SheetSize,
-  bgColor: string = "#FFFFFF"
+  bgColor: string = "#FFFFFF",
+  customDpi?: number
 ): Promise<GeneratedSheet> {
+  const dpi = customDpi || SHEET_CONFIGS[sheetSize].dpi;
   const config = SHEET_CONFIGS[sheetSize];
   const layout = calculateGridLayout(config);
   
-  // Calculate pixel dimensions
-  const sheetWidthPx = Math.round(config.widthInches * config.dpi);
-  const sheetHeightPx = Math.round(config.heightInches * config.dpi);
-  const photoWidthPx = Math.round(config.photoWidthInches * config.dpi);
-  const photoHeightPx = Math.round(config.photoHeightInches * config.dpi);
-  const paddingPx = Math.round(config.paddingInches * config.dpi);
-  const marginPx = Math.round(config.marginInches * config.dpi);
+  // Calculate pixel dimensions using custom DPI
+  const sheetWidthPx = Math.round(config.widthInches * dpi);
+  const sheetHeightPx = Math.round(config.heightInches * dpi);
+  const photoWidthPx = Math.round(config.photoWidthInches * dpi);
+  const photoHeightPx = Math.round(config.photoHeightInches * dpi);
+  const paddingPx = Math.round(config.paddingInches * dpi);
+  const marginPx = Math.round(config.marginInches * dpi);
   
   // Create canvas
   const canvas = document.createElement("canvas");
