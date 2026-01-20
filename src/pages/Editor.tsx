@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { EditorUpload } from "@/components/editor/EditorUpload";
 import { EditorProcessing } from "@/components/editor/EditorProcessing";
 import { EditorReview } from "@/components/editor/EditorReview";
 import { EditorDownload } from "@/components/editor/EditorDownload";
 import { EditorHeader } from "@/components/editor/EditorHeader";
+import { ImageProcessingProvider, useImageProcessingContext } from "@/contexts/ImageProcessingContext";
 
 export type EditorState = "upload" | "processing" | "review" | "download";
 
@@ -15,7 +16,7 @@ export type CountryFormat = {
   bgColor: "white" | "grey" | "blue";
 };
 
-const Editor = () => {
+const EditorContent = () => {
   const [editorState, setEditorState] = useState<EditorState>("upload");
   const [selectedCountry, setSelectedCountry] = useState<CountryFormat>({
     code: "US",
@@ -24,16 +25,21 @@ const Editor = () => {
     bgColor: "white",
   });
   const [bgColor, setBgColor] = useState<"white" | "grey" | "blue">("white");
+  
+  const { processImage, reset, processedImage, error } = useImageProcessingContext();
 
-  // Mock file for demo purposes
-  const handleFileSelect = (file: File) => {
-    console.log("File selected:", file.name);
+  const handleFileSelect = useCallback(async (file: File) => {
     setEditorState("processing");
-    // Simulate processing time
-    setTimeout(() => {
+    
+    const result = await processImage(file);
+    
+    if (result) {
       setEditorState("review");
-    }, 3000);
-  };
+    } else {
+      // If processing failed, go back to upload
+      setEditorState("upload");
+    }
+  }, [processImage]);
 
   const handleProceedToDownload = () => {
     setEditorState("download");
@@ -44,6 +50,7 @@ const Editor = () => {
   };
 
   const handleStartOver = () => {
+    reset();
     setEditorState("upload");
   };
 
@@ -64,7 +71,7 @@ const Editor = () => {
               exit={{ opacity: 0, y: -20 }}
               className="flex-1"
             >
-              <EditorUpload onFileSelect={handleFileSelect} />
+              <EditorUpload onFileSelect={handleFileSelect} error={error} />
             </motion.div>
           )}
 
@@ -106,7 +113,7 @@ const Editor = () => {
               exit={{ opacity: 0, y: -20 }}
               className="flex-1"
             >
-              <EditorDownload
+            <EditorDownload
                 selectedCountry={selectedCountry}
                 onBack={handleBackToReview}
               />
@@ -115,6 +122,14 @@ const Editor = () => {
         </AnimatePresence>
       </main>
     </div>
+  );
+};
+
+const Editor = () => {
+  return (
+    <ImageProcessingProvider>
+      <EditorContent />
+    </ImageProcessingProvider>
   );
 };
 

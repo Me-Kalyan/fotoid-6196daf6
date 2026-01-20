@@ -8,57 +8,22 @@ import {
   Move,
   Sun,
   Paintbrush,
-  Smile
+  Smile,
+  Loader2
 } from "lucide-react";
+import type { ComplianceResult, CheckStatus } from "@/hooks/useFaceCompliance";
 
-type CheckStatus = "pass" | "warning" | "fail";
-
-interface ComplianceCheck {
-  id: string;
-  label: string;
-  status: CheckStatus;
-  message: string;
-  icon: React.ElementType;
+interface CompliancePanelProps {
+  compliance: ComplianceResult;
 }
 
-// Mock compliance data - will be computed by AI in Phase 4
-const complianceChecks: ComplianceCheck[] = [
-  {
-    id: "background",
-    label: "Background Removed",
-    status: "pass",
-    message: "Clean extraction detected",
-    icon: Paintbrush,
-  },
-  {
-    id: "head-straight",
-    label: "Head Position",
-    status: "pass",
-    message: "Roll angle: 1.2° (< 5° required)",
-    icon: Move,
-  },
-  {
-    id: "eyes-open",
-    label: "Eyes Open",
-    status: "pass",
-    message: "Both eyes clearly visible",
-    icon: Eye,
-  },
-  {
-    id: "expression",
-    label: "Neutral Expression",
-    status: "warning",
-    message: "Slight smile detected",
-    icon: Smile,
-  },
-  {
-    id: "lighting",
-    label: "Lighting Quality",
-    status: "warning",
-    message: "Minor shadows on left side",
-    icon: Sun,
-  },
-];
+const iconMap: Record<string, React.ElementType> = {
+  background: Paintbrush,
+  head: Move,
+  eyes: Eye,
+  expression: Smile,
+  lighting: Sun,
+};
 
 const statusConfig: Record<CheckStatus, { icon: React.ElementType; color: string; bgColor: string }> = {
   pass: { 
@@ -76,12 +41,15 @@ const statusConfig: Record<CheckStatus, { icon: React.ElementType; color: string
     color: "text-red-600", 
     bgColor: "bg-red-50 border-red-600" 
   },
+  pending: {
+    icon: Loader2,
+    color: "text-muted-foreground",
+    bgColor: "bg-secondary/50 border-muted",
+  },
 };
 
-export const CompliancePanel = () => {
-  const passCount = complianceChecks.filter((c) => c.status === "pass").length;
-  const totalCount = complianceChecks.length;
-  const allPassed = passCount === totalCount;
+export const CompliancePanel = ({ compliance }: CompliancePanelProps) => {
+  const { checks, passCount, totalCount, allPassed, isAnalyzing } = compliance;
 
   return (
     <div className="space-y-4">
@@ -91,33 +59,48 @@ export const CompliancePanel = () => {
           <ShieldCheck className="w-5 h-5 text-brand" />
           AI Compliance
         </h2>
-        <span className={`text-sm font-bold ${allPassed ? "text-green-600" : "text-amber-600"}`}>
-          {passCount}/{totalCount}
-        </span>
+        {!isAnalyzing && (
+          <span className={`text-sm font-bold ${allPassed ? "text-green-600" : "text-amber-600"}`}>
+            {passCount}/{totalCount}
+          </span>
+        )}
       </div>
 
       {/* Overall Status */}
       <motion.div
         className={`p-3 border-2 ${
-          allPassed 
-            ? "border-green-600 bg-green-50" 
-            : "border-amber-600 bg-amber-50"
+          isAnalyzing 
+            ? "border-muted bg-secondary/30"
+            : allPassed 
+              ? "border-green-600 bg-green-50" 
+              : "border-amber-600 bg-amber-50"
         }`}
         initial={{ scale: 0.95 }}
         animate={{ scale: 1 }}
+        key={isAnalyzing ? "analyzing" : allPassed ? "passed" : "warning"}
       >
-        <p className={`text-sm font-bold ${allPassed ? "text-green-700" : "text-amber-700"}`}>
-          {allPassed 
-            ? "✓ Photo meets all requirements!" 
-            : "⚠ Minor issues detected (may still be accepted)"}
+        <p className={`text-sm font-bold ${
+          isAnalyzing 
+            ? "text-muted-foreground"
+            : allPassed 
+              ? "text-green-700" 
+              : "text-amber-700"
+        }`}>
+          {isAnalyzing 
+            ? "⏳ Analyzing your photo..."
+            : allPassed 
+              ? "✓ Photo meets all requirements!" 
+              : "⚠ Minor issues detected (may still be accepted)"}
         </p>
       </motion.div>
 
       {/* Checklist */}
       <div className="space-y-2">
-        {complianceChecks.map((check, index) => {
-          const StatusIcon = statusConfig[check.status].icon;
-          const CheckIcon = check.icon;
+        {checks.map((check, index) => {
+          const StatusIcon = check.status === "pending" && isAnalyzing 
+            ? Loader2 
+            : statusConfig[check.status].icon;
+          const CheckIcon = iconMap[check.iconType] || Paintbrush;
 
           return (
             <motion.div
@@ -129,7 +112,11 @@ export const CompliancePanel = () => {
             >
               <div className="flex items-start gap-3">
                 <div className="flex-shrink-0 mt-0.5">
-                  <StatusIcon className={`w-5 h-5 ${statusConfig[check.status].color}`} />
+                  <StatusIcon 
+                    className={`w-5 h-5 ${statusConfig[check.status].color} ${
+                      check.status === "pending" && isAnalyzing ? "animate-spin" : ""
+                    }`} 
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
