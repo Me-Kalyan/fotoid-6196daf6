@@ -418,7 +418,7 @@ const Subscription = () => {
                 },
                 {
                   q: "Can I get a refund?",
-                  a: "Yes! If you're not satisfied within 7 days of purchase, contact us for a full refund."
+                  a: "All purchases are final. We do not offer refunds. Please try our free tier before upgrading."
                 },
                 {
                   q: "What happens when my subscription expires?",
