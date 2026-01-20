@@ -55,7 +55,7 @@ const InstallBanner = () => {
 
             {/* Content */}
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-foreground">Install PassportPop</h3>
+              <h3 className="font-bold text-foreground">Install FotoID</h3>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {isIOS ? (
                   <span className="flex items-center gap-1 flex-wrap">

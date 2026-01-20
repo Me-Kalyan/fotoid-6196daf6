@@ -120,7 +120,7 @@ export function useRazorpay() {
             amount: data.amount,
             currency: data.currency,
             order_id: data.order_id,
-            name: "PassportPop",
+            name: "FotoID",
             description: PLAN_DESCRIPTIONS[planType],
             prefill: {
               email: data.user_email || undefined,

@@ -14,7 +14,7 @@ const Footer = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
             >
-              PassportPop
+              FotoID
             </motion.h3>
             <p className="mt-3 max-w-sm text-primary-foreground/80">
               The anti-boring passport photo tool. Instant. Private. And actually fun to use.
@@ -73,7 +73,7 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-primary-foreground/20 pt-8 md:flex-row">
           <p className="text-sm text-primary-foreground/60">
-            © 2025 PassportPop. All rights reserved.
+            © 2025 FotoID. All rights reserved.
           </p>
           <p className="flex items-center gap-1 text-sm text-primary-foreground/60">
             Made with <Heart className="h-4 w-4 text-brand" fill="currentColor" /> for travelers everywhere

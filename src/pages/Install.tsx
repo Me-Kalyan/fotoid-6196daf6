@@ -31,7 +31,7 @@ const Install = () => {
           </div>
           <h1 className="font-heading text-2xl font-black mb-2">Already Installed!</h1>
           <p className="text-muted-foreground mb-6">
-            PassportPix is already installed on your device. Open it from your home screen for the best experience.
+            FotoID is already installed on your device. Open it from your home screen for the best experience.
           </p>
           <NeoButton onClick={() => navigate("/")} className="w-full">
             <ArrowLeft className="w-5 h-5" />
@@ -70,10 +70,10 @@ const Install = () => {
             <Smartphone className="w-12 h-12 text-brand-foreground" />
           </div>
           <h1 className="font-heading text-3xl font-black mb-3">
-            Install PassportPix
+            Install FotoID
           </h1>
           <p className="text-muted-foreground">
-            Add PassportPix to your home screen for instant access and a native app experience.
+            Add FotoID to your home screen for instant access and a native app experience.
           </p>
         </motion.div>
 
@@ -169,7 +169,7 @@ const Install = () => {
                 <div>
                   <p className="font-heading font-bold">Tap "Add"</p>
                   <p className="text-sm text-muted-foreground">
-                    Confirm to add PassportPix to your home screen
+                    Confirm to add FotoID to your home screen
                   </p>
                 </div>
               </div>

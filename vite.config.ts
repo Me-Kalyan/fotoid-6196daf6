@@ -20,8 +20,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "robots.txt", "pwa-icons/*.png"],
       manifest: {
-        name: "PassportPix - AI Passport Photos",
-        short_name: "PassportPix",
+        name: "FotoID - AI Passport Photos",
+        short_name: "FotoID",
         description: "Create perfect passport photos in seconds with AI-powered background removal",
         theme_color: "#FFCC00",
         background_color: "#FFFBEB",
