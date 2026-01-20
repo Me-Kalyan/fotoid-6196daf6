@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Shield, Heart } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -52,19 +53,19 @@ const Footer = () => {
             <h4 className="font-heading font-bold">Legal</h4>
             <ul className="mt-3 space-y-2 text-sm text-primary-foreground/80">
               <li>
-                <a href="#" className="hover:text-primary-foreground hover:underline">
+                <Link to="/privacy-policy" className="hover:text-primary-foreground hover:underline">
                   Privacy Policy
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-primary-foreground hover:underline">
+                <Link to="/terms-of-service" className="hover:text-primary-foreground hover:underline">
                   Terms of Service
-                </a>
+                </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-primary-foreground hover:underline">
+                <Link to="/refund-policy" className="hover:text-primary-foreground hover:underline">
                   Refund Policy
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
