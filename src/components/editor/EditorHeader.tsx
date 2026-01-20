@@ -35,7 +35,7 @@ export const EditorHeader = ({ editorState, onStartOver }: EditorHeaderProps) =>
           
           <div className="flex items-center gap-2">
             <Camera className="w-6 h-6 text-brand" />
-            <span className="font-heading font-bold text-xl">PassportPop</span>
+            <span className="font-heading font-bold text-xl">FotoID</span>
           </div>
         </div>
 

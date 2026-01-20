@@ -102,7 +102,7 @@ const Auth: React.FC = () => {
       if (mode === 'signup') {
         toast({
           title: 'Account Created!',
-          description: 'Welcome to PassportPop!',
+          description: 'Welcome to FotoID!',
         });
       }
     } catch (error) {
@@ -151,7 +151,7 @@ const Auth: React.FC = () => {
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <h1 className="font-heading text-2xl font-bold">PassportPop</h1>
+          <h1 className="font-heading text-2xl font-bold">FotoID</h1>
         </div>
       </header>
 

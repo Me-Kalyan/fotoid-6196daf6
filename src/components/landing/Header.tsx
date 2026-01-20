@@ -58,7 +58,7 @@ const Header = () => {
           <div className="flex h-10 w-10 items-center justify-center border-2 border-primary bg-brand">
             <Zap className="h-6 w-6 text-brand-foreground" />
           </div>
-          <span className="font-heading text-xl font-bold">PassportPop</span>
+          <span className="font-heading text-xl font-bold">FotoID</span>
         </motion.a>
 
         {/* Desktop Navigation */}
