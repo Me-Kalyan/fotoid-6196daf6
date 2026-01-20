@@ -57,7 +57,7 @@ export const CompliancePanel = ({ compliance }: CompliancePanelProps) => {
       <div className="flex items-center justify-between">
         <h2 className="font-heading font-bold text-lg flex items-center gap-2">
           <ShieldCheck className="w-5 h-5 text-brand" />
-          AI Compliance
+          Photo Quality Check
         </h2>
         {!isAnalyzing && (
           <span className={`text-sm font-bold ${allPassed ? "text-green-600" : "text-amber-600"}`}>
@@ -89,8 +89,8 @@ export const CompliancePanel = ({ compliance }: CompliancePanelProps) => {
           {isAnalyzing 
             ? "⏳ Analyzing your photo..."
             : allPassed 
-              ? "✓ Photo meets all requirements!" 
-              : "⚠ Minor issues detected (may still be accepted)"}
+              ? "✓ Photo looks great!" 
+              : "⚠ Minor issues detected"}
         </p>
       </motion.div>
 

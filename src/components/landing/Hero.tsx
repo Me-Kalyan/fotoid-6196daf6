@@ -65,7 +65,7 @@ const Hero = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            AI-powered, government-compliant, and processed 100% on your device.{" "}
+            AI-powered background removal, processed 100% on your device.{" "}
             <span className="font-bold text-foreground">Privacy first.</span>
           </motion.p>
 

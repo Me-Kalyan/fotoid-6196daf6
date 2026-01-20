@@ -8,7 +8,7 @@ const stepConfig: Record<ProcessingStep, { icon: React.ElementType; label: strin
   "loading-models": { icon: Cpu, label: "Initializing AI models...", sublabel: "Loading neural networks (~10MB)" },
   "detecting-face": { icon: ScanFace, label: "Detecting face landmarks...", sublabel: "Finding 468 facial points" },
   "removing-background": { icon: Wand2, label: "Removing background...", sublabel: "Pixel-perfect extraction" },
-  "applying-crop": { icon: Crop, label: "Applying passport crop...", sublabel: "Optimizing for compliance" },
+  "applying-crop": { icon: Crop, label: "Applying passport crop...", sublabel: "Adjusting size and position" },
   complete: { icon: Sparkles, label: "Processing complete!", sublabel: "Your photo is ready" },
   error: { icon: Cpu, label: "Error occurred", sublabel: "Something went wrong" },
 };
