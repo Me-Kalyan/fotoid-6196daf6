@@ -4,8 +4,9 @@ import { ControlsPanel } from "./ControlsPanel";
 import { BrushCanvas } from "./BrushCanvas";
 import { CompliancePanel } from "./CompliancePanel";
 import { EditorToolbar } from "./EditorToolbar";
+import { BeforeAfterSlider } from "./BeforeAfterSlider";
 import { NeoButton } from "@/components/ui/neo-button";
-import { Download, ChevronRight } from "lucide-react";
+import { Download, ChevronRight, SplitSquareHorizontal, Paintbrush } from "lucide-react";
 import { useImageProcessingContext } from "@/contexts/ImageProcessingContext";
 import type { CountryFormat } from "@/pages/Editor";
 
@@ -39,6 +40,7 @@ export const EditorReview = ({
   // State to trigger undo/redo in canvas
   const [undoImageData, setUndoImageData] = useState<ImageData | null>(null);
   const [redoImageData, setRedoImageData] = useState<ImageData | null>(null);
+  const [showComparison, setShowComparison] = useState(false);
 
   const handlePushHistory = useCallback((imageData: ImageData) => {
     pushHistory(imageData);
@@ -78,25 +80,61 @@ export const EditorReview = ({
           />
         </motion.aside>
 
-        {/* Center - Canvas */}
+        {/* Center - Canvas or Comparison */}
         <motion.main
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="flex-1 flex items-center justify-center p-4 lg:p-8 bg-secondary/30"
+          className="flex-1 flex flex-col items-center justify-center p-4 lg:p-8 bg-secondary/30 gap-4"
         >
-          <BrushCanvas 
-            bgColor={bgColor} 
-            processedImageUrl={processedImage?.processedImage}
-            originalImageUrl={processedImage?.originalImage}
-            faceLandmarks={processedImage?.faceLandmarks}
-            activeTool={activeTool}
-            brushSize={brushSize}
-            zoom={zoom}
-            setZoom={setZoom}
-            onPushHistory={handlePushHistory}
-            undoImageData={undoImageData}
-            redoImageData={redoImageData}
-          />
+          {/* View Toggle */}
+          <div className="flex items-center gap-2 bg-background border-2 border-primary p-1">
+            <motion.button
+              onClick={() => setShowComparison(false)}
+              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-bold transition-all ${
+                !showComparison
+                  ? "bg-brand text-brand-foreground"
+                  : "hover:bg-secondary"
+              }`}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Paintbrush className="w-4 h-4" />
+              Edit
+            </motion.button>
+            <motion.button
+              onClick={() => setShowComparison(true)}
+              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-bold transition-all ${
+                showComparison
+                  ? "bg-brand text-brand-foreground"
+                  : "hover:bg-secondary"
+              }`}
+              whileTap={{ scale: 0.95 }}
+            >
+              <SplitSquareHorizontal className="w-4 h-4" />
+              Compare
+            </motion.button>
+          </div>
+
+          {showComparison && processedImage?.originalImage && processedImage?.processedImage ? (
+            <BeforeAfterSlider
+              beforeImage={processedImage.originalImage}
+              afterImage={processedImage.processedImage}
+              className="w-full max-w-md aspect-[3/4]"
+            />
+          ) : (
+            <BrushCanvas 
+              bgColor={bgColor} 
+              processedImageUrl={processedImage?.processedImage}
+              originalImageUrl={processedImage?.originalImage}
+              faceLandmarks={processedImage?.faceLandmarks}
+              activeTool={activeTool}
+              brushSize={brushSize}
+              zoom={zoom}
+              setZoom={setZoom}
+              onPushHistory={handlePushHistory}
+              undoImageData={undoImageData}
+              redoImageData={redoImageData}
+            />
+          )}
         </motion.main>
 
         {/* Right Panel - Compliance Checklist */}

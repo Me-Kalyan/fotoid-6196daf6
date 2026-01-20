@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { User, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import type { BrushTool } from "@/hooks/useCanvasBrush";
 import type { FaceLandmarks } from "@/hooks/useImageProcessing";
+import { FaceGuideOverlay } from "./FaceGuideOverlay";
 
 interface BrushCanvasProps {
   bgColor: "white" | "grey" | "blue";
@@ -453,37 +454,13 @@ export const BrushCanvas = ({
           )}
         </div>
 
-        {/* Face guide overlay */}
-        {showGuides && (
-          <div className="absolute inset-0 pointer-events-none">
-            {/* Center crosshair */}
-            <div className="absolute top-1/2 left-0 right-0 h-px bg-brand/30" />
-            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-brand/30" />
-            
-            {/* Face zone indicator */}
-            <div className="absolute top-[15%] left-[25%] right-[25%] bottom-[30%] border-2 border-dashed border-brand/40 rounded-t-full" />
-            
-            {/* Face landmarks visualization */}
-            {faceLandmarks && (
-              <>
-                <div 
-                  className="absolute w-2 h-2 bg-success rounded-full transform -translate-x-1/2 -translate-y-1/2"
-                  style={{ 
-                    left: `${(faceLandmarks.leftEye.x / 300) * 100}%`,
-                    top: `${(faceLandmarks.leftEye.y / 300) * 100}%`,
-                  }}
-                />
-                <div 
-                  className="absolute w-2 h-2 bg-success rounded-full transform -translate-x-1/2 -translate-y-1/2"
-                  style={{ 
-                    left: `${(faceLandmarks.rightEye.x / 300) * 100}%`,
-                    top: `${(faceLandmarks.rightEye.y / 300) * 100}%`,
-                  }}
-                />
-              </>
-            )}
-          </div>
-        )}
+        {/* Enhanced Face Guide Overlay */}
+        <FaceGuideOverlay
+          faceLandmarks={faceLandmarks}
+          showGuides={showGuides}
+          canvasWidth={canvasSize.width}
+          canvasHeight={canvasSize.height}
+        />
 
         {/* Corner markers */}
         <div className="absolute top-0 left-0 w-4 h-4 border-t-3 border-l-3 border-brand pointer-events-none" />
