@@ -5,6 +5,7 @@ import HowItWorks from "@/components/landing/HowItWorks";
 import UploadSection from "@/components/landing/UploadSection";
 import Pricing from "@/components/landing/Pricing";
 import Footer from "@/components/landing/Footer";
+import InstallBanner from "@/components/landing/InstallBanner";
 
 const Index = () => {
   return (
@@ -22,6 +23,7 @@ const Index = () => {
         </section>
       </main>
       <Footer />
+      <InstallBanner />
     </div>
   );
 };
