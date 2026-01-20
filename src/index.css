@@ -162,4 +162,29 @@
   .shadow-brutal-lg {
     box-shadow: var(--shadow-brutal-lg);
   }
+
+  /* Touch-friendly utility */
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Improved tap targets for mobile */
+  .tap-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Mobile touch improvements */
+@media (hover: none) and (pointer: coarse) {
+  /* Larger touch targets on mobile */
+  button, a, [role="button"] {
+    min-height: 44px;
+  }
+
+  /* Disable hover effects on touch devices */
+  .no-touch-hover:hover {
+    background-color: inherit;
+  }
 }
