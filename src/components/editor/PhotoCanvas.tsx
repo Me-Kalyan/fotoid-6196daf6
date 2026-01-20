@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import { User, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import type { FaceLandmarks } from "@/hooks/useImageProcessing";
+import { useTouchGestures } from "@/hooks/useTouchGestures";
 
 interface PhotoCanvasProps {
   bgColor: "white" | "grey" | "blue";
@@ -16,66 +17,25 @@ const bgColorMap = {
 };
 
 export const PhotoCanvas = ({ bgColor, processedImageUrl, faceLandmarks }: PhotoCanvasProps) => {
-  const [zoom, setZoom] = useState(100);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
   const [showGuides, setShowGuides] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
-  const dragStartRef = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
-
-  // Handle mouse/touch drag for repositioning
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(true);
-    dragStartRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      posX: position.x,
-      posY: position.y,
-    };
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    
-    const deltaX = e.clientX - dragStartRef.current.x;
-    const deltaY = e.clientY - dragStartRef.current.y;
-    
-    setPosition({
-      x: dragStartRef.current.posX + deltaX,
-      y: dragStartRef.current.posY + deltaY,
-    });
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  // Handle wheel zoom
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -5 : 5;
-    setZoom((prev) => Math.min(150, Math.max(50, prev + delta)));
-  };
-
-  const resetView = () => {
-    setZoom(100);
-    setPosition({ x: 0, y: 0 });
-  };
+  
+  const { zoom, setZoom, position, isDragging, resetView, handlers } = useTouchGestures({
+    minZoom: 50,
+    maxZoom: 150,
+    initialZoom: 100,
+  });
 
   return (
     <div className="flex flex-col items-center gap-4">
       {/* Canvas Container */}
       <motion.div
         ref={containerRef}
-        className="relative border-3 border-primary shadow-brutal-lg cursor-move overflow-hidden"
+        className="relative border-3 border-primary shadow-brutal-lg cursor-move overflow-hidden touch-none"
         style={{ backgroundColor: bgColorMap[bgColor] }}
         initial={{ scale: 0.95 }}
         animate={{ scale: 1 }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onWheel={handleWheel}
+        {...handlers}
       >
         {/* Photo Canvas - 300x300 for demo (2x2 ratio) */}
         <div
@@ -189,7 +149,7 @@ export const PhotoCanvas = ({ bgColor, processedImageUrl, faceLandmarks }: Photo
 
       {/* Canvas Info */}
       <p className="text-xs text-muted-foreground text-center">
-        Drag to reposition • Scroll to zoom • Use toolbar to touch up edges
+        Drag to pan • Pinch to zoom • Use toolbar to touch up edges
       </p>
     </div>
   );
