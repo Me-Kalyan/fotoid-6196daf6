@@ -11,6 +11,7 @@ const neoCardVariants = cva(
         default: "shadow-brutal",
         flat: "",
         hover: "hover:shadow-brutal-lg",
+        highlight: "shadow-brutal bg-highlight/10 border-brand",
       },
       padding: {
         none: "",
