@@ -1,9 +1,11 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Zap, User, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { NeoButton } from "@/components/ui/neo-button";
 import { NeoBadge } from "@/components/ui/neo-badge";
 import { useAuth } from "@/contexts/AuthContext";
+import { MobileMenu } from "./MobileMenu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +16,24 @@ import {
 const Header = () => {
   const navigate = useNavigate();
   const { user, signOut, loading } = useAuth();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileMenuOpen]);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [navigate]);
 
   const handleAuthClick = () => {
     if (user) {
@@ -29,10 +49,11 @@ const Header = () => {
         {/* Logo */}
         <motion.a
           href="/"
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 touch-manipulation"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4 }}
+          whileTap={{ scale: 0.98 }}
         >
           <div className="flex h-10 w-10 items-center justify-center border-2 border-primary bg-brand">
             <Zap className="h-6 w-6 text-brand-foreground" />
@@ -40,7 +61,7 @@ const Header = () => {
           <span className="font-heading text-xl font-bold">PassportPop</span>
         </motion.a>
 
-        {/* Navigation */}
+        {/* Desktop Navigation */}
         <motion.nav
           className="hidden items-center gap-6 md:flex"
           initial={{ opacity: 0 }}
@@ -67,14 +88,14 @@ const Header = () => {
           </a>
         </motion.nav>
 
-        {/* CTA / User Menu */}
+        {/* Desktop CTA / User Menu */}
         <motion.div
-          className="flex items-center gap-3"
+          className="hidden md:flex items-center gap-3"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.4, delay: 0.2 }}
         >
-          <NeoBadge variant="highlight" size="sm" className="hidden sm:inline-flex">
+          <NeoBadge variant="highlight" size="sm">
             2 Free
           </NeoBadge>
           
@@ -85,7 +106,7 @@ const Header = () => {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2 border-2 border-primary bg-background px-3 py-2 font-heading text-sm font-bold hover:bg-accent transition-colors shadow-brutal hover:shadow-brutal-hover">
                   <User className="h-4 w-4" />
-                  <span className="hidden sm:inline truncate max-w-[120px]">
+                  <span className="truncate max-w-[120px]">
                     {user.email?.split('@')[0]}
                   </span>
                 </button>
@@ -112,6 +133,12 @@ const Header = () => {
             </NeoButton>
           )}
         </motion.div>
+
+        {/* Mobile Menu Toggle */}
+        <MobileMenu 
+          isOpen={mobileMenuOpen} 
+          onToggle={() => setMobileMenuOpen(!mobileMenuOpen)} 
+        />
       </div>
     </header>
   );
