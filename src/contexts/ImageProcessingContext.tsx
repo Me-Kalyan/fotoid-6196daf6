@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { useImageProcessing, type ProcessedImage, type ProcessingProgress } from "@/hooks/useImageProcessing";
 import { useFaceCompliance, type ComplianceResult } from "@/hooks/useFaceCompliance";
+import { useCanvasBrush, type BrushTool } from "@/hooks/useCanvasBrush";
 
 interface ImageProcessingContextType {
   // Original file
@@ -17,6 +18,19 @@ interface ImageProcessingContextType {
   
   // Compliance
   compliance: ComplianceResult;
+  
+  // Brush tools
+  activeTool: BrushTool;
+  setActiveTool: (tool: BrushTool) => void;
+  brushSize: number;
+  setBrushSize: (size: number) => void;
+  zoom: number;
+  setZoom: (zoom: number) => void;
+  canUndo: boolean;
+  canRedo: boolean;
+  pushHistory: (imageData: ImageData) => void;
+  undo: () => ImageData | null;
+  redo: () => ImageData | null;
   
   // Actions
   processImage: (file: File) => Promise<ProcessedImage | null>;
@@ -55,15 +69,32 @@ export const ImageProcessingProvider: React.FC<ImageProcessingProviderProps> = (
     isProcessing,
   });
 
+  const {
+    activeTool,
+    setActiveTool,
+    brushSize,
+    setBrushSize,
+    zoom,
+    setZoom,
+    canUndo,
+    canRedo,
+    pushHistory,
+    undo,
+    redo,
+    resetHistory,
+  } = useCanvasBrush();
+
   const processImage = useCallback(async (file: File) => {
     setOriginalFile(file);
+    resetHistory();
     return processImageHook(file);
-  }, [processImageHook]);
+  }, [processImageHook, resetHistory]);
 
   const reset = useCallback(() => {
     setOriginalFile(null);
     resetProcessing();
-  }, [resetProcessing]);
+    resetHistory();
+  }, [resetProcessing, resetHistory]);
 
   return (
     <ImageProcessingContext.Provider
@@ -75,6 +106,17 @@ export const ImageProcessingProvider: React.FC<ImageProcessingProviderProps> = (
         error,
         processedImage,
         compliance,
+        activeTool,
+        setActiveTool,
+        brushSize,
+        setBrushSize,
+        zoom,
+        setZoom,
+        canUndo,
+        canRedo,
+        pushHistory,
+        undo,
+        redo,
         processImage,
         reset,
       }}

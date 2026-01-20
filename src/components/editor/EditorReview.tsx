@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
+import { useState, useCallback } from "react";
 import { ControlsPanel } from "./ControlsPanel";
-import { PhotoCanvas } from "./PhotoCanvas";
+import { BrushCanvas } from "./BrushCanvas";
 import { CompliancePanel } from "./CompliancePanel";
 import { EditorToolbar } from "./EditorToolbar";
 import { NeoButton } from "@/components/ui/neo-button";
@@ -23,7 +24,38 @@ export const EditorReview = ({
   setBgColor,
   onProceedToDownload,
 }: EditorReviewProps) => {
-  const { processedImage, compliance } = useImageProcessingContext();
+  const { 
+    processedImage, 
+    compliance,
+    activeTool,
+    brushSize,
+    zoom,
+    setZoom,
+    pushHistory,
+    undo,
+    redo,
+  } = useImageProcessingContext();
+
+  // State to trigger undo/redo in canvas
+  const [undoImageData, setUndoImageData] = useState<ImageData | null>(null);
+  const [redoImageData, setRedoImageData] = useState<ImageData | null>(null);
+
+  const handlePushHistory = useCallback((imageData: ImageData) => {
+    pushHistory(imageData);
+    setUndoImageData(null);
+    setRedoImageData(null);
+  }, [pushHistory]);
+
+  // We need to subscribe to undo/redo from context
+  const handleUndo = useCallback(() => {
+    const data = undo();
+    if (data) setUndoImageData(data);
+  }, [undo]);
+
+  const handleRedo = useCallback(() => {
+    const data = redo();
+    if (data) setRedoImageData(data);
+  }, [redo]);
 
   return (
     <div className="flex-1 flex flex-col">
@@ -52,10 +84,18 @@ export const EditorReview = ({
           animate={{ opacity: 1, scale: 1 }}
           className="flex-1 flex items-center justify-center p-4 lg:p-8 bg-secondary/30"
         >
-          <PhotoCanvas 
+          <BrushCanvas 
             bgColor={bgColor} 
             processedImageUrl={processedImage?.processedImage}
+            originalImageUrl={processedImage?.originalImage}
             faceLandmarks={processedImage?.faceLandmarks}
+            activeTool={activeTool}
+            brushSize={brushSize}
+            zoom={zoom}
+            setZoom={setZoom}
+            onPushHistory={handlePushHistory}
+            undoImageData={undoImageData}
+            redoImageData={redoImageData}
           />
         </motion.main>
 
