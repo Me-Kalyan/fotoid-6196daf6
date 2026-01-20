@@ -76,7 +76,8 @@ const Pricing = () => {
         title: "Sign in required",
         description: "Please sign in or create an account to purchase.",
       });
-      navigate(`/auth?redirect=/#pricing&plan=${planName.toLowerCase()}`);
+      // Use relative path only (no external URLs) to prevent open redirect
+      navigate(`/auth?redirect=${encodeURIComponent('/#pricing')}&plan=${encodeURIComponent(planName.toLowerCase())}`);
       return;
     }
 

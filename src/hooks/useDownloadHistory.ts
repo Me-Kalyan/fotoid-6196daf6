@@ -5,6 +5,35 @@ import { useFingerprint } from './useFingerprint';
 
 const FREE_DOWNLOAD_LIMIT = 2;
 
+// Valid photo types whitelist
+const VALID_PHOTO_TYPES = ['passport', 'single', 'sheet', 'paid_credit'] as const;
+type PhotoType = typeof VALID_PHOTO_TYPES[number];
+
+// Validation helpers
+const validatePhotoType = (type?: string): PhotoType => {
+  if (type && VALID_PHOTO_TYPES.includes(type as PhotoType)) {
+    return type as PhotoType;
+  }
+  return 'passport'; // default fallback
+};
+
+const validateCountryCode = (code?: string): string | null => {
+  if (!code) return null;
+  // ISO 3166-1 alpha-2: exactly 2 uppercase letters
+  const cleaned = code.toUpperCase().slice(0, 2);
+  if (/^[A-Z]{2}$/.test(cleaned)) {
+    return cleaned;
+  }
+  return null;
+};
+
+const validateFingerprint = (fp?: string | null): string | null => {
+  if (!fp) return null;
+  // Limit length and allow only alphanumeric, hyphens, underscores
+  const cleaned = fp.slice(0, 128).replace(/[^a-zA-Z0-9_-]/g, '');
+  return cleaned || null;
+};
+
 export interface DownloadRecord {
   id: string;
   user_id: string;
@@ -75,14 +104,19 @@ export const useDownloadHistory = () => {
     }) => {
       if (!user) throw new Error('User not authenticated');
 
+      // Validate and sanitize all inputs before inserting
+      const validatedPhotoType = validatePhotoType(photoType);
+      const validatedCountryCode = validateCountryCode(countryCode);
+      const validatedFingerprint = validateFingerprint(fingerprint);
+
       const { error } = await supabase
         .from('download_history')
         .insert({
           user_id: user.id,
-          photo_type: photoType || 'passport',
-          country_code: countryCode,
+          photo_type: validatedPhotoType,
+          country_code: validatedCountryCode,
           is_paid: isPaid || false,
-          fingerprint: fingerprint,
+          fingerprint: validatedFingerprint,
         });
 
       if (error) throw error;

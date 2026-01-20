@@ -23,11 +23,22 @@ const Auth: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Validate redirect URL to prevent open redirect attacks
+  const getSafeRedirectUrl = (url: string | null): string => {
+    if (!url) return '/';
+    // Only allow relative paths that start with / (not //)
+    // This prevents redirects to external domains like //evil.com
+    if (url.startsWith('/') && !url.startsWith('//')) {
+      return url;
+    }
+    return '/';
+  };
+
   // Redirect if already logged in (handle redirect param)
   useEffect(() => {
     if (user && !loading) {
       const params = new URLSearchParams(window.location.search);
-      const redirectUrl = params.get('redirect') || '/';
+      const redirectUrl = getSafeRedirectUrl(params.get('redirect'));
       navigate(redirectUrl);
     }
   }, [user, loading, navigate]);
