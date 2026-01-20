@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
-import { Check, Zap, Crown } from "lucide-react";
+import { Check, Zap, Crown, Loader2 } from "lucide-react";
 import { NeoButton } from "@/components/ui/neo-button";
 import { NeoCard, NeoCardContent, NeoCardHeader, NeoCardTitle, NeoCardDescription, NeoCardFooter } from "@/components/ui/neo-card";
 import { NeoBadge } from "@/components/ui/neo-badge";
+import { useRazorpay } from "@/hooks/useRazorpay";
+import { useNavigate } from "react-router-dom";
 
 const plans = [
   {
@@ -54,6 +56,23 @@ const plans = [
 ];
 
 const Pricing = () => {
+  const { initiatePayment, isLoading } = useRazorpay();
+  const navigate = useNavigate();
+
+  const handlePlanClick = async (planName: string) => {
+    if (planName === "Free") {
+      // Scroll to upload section or navigate
+      document.getElementById("upload-section")?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+
+    if (planName === "Pro") {
+      await initiatePayment("pro");
+    } else if (planName === "Single") {
+      await initiatePayment("single");
+    }
+  };
+
   return (
     <section className="border-b-2 border-primary bg-background px-4 py-16 md:py-24">
       <div className="container mx-auto max-w-6xl">
@@ -134,9 +153,17 @@ const Pricing = () => {
                     variant={plan.variant}
                     className="w-full"
                     size="lg"
+                    onClick={() => handlePlanClick(plan.name)}
+                    disabled={isLoading && plan.name !== "Free"}
                   >
-                    {plan.popular && <Zap className="h-4 w-4" />}
-                    {plan.cta}
+                    {isLoading && plan.name !== "Free" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        {plan.popular && <Zap className="h-4 w-4" />}
+                        {plan.cta}
+                      </>
+                    )}
                   </NeoButton>
                 </NeoCardFooter>
               </NeoCard>
