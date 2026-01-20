@@ -5,6 +5,8 @@ import { NeoCard, NeoCardContent, NeoCardHeader, NeoCardTitle, NeoCardDescriptio
 import { NeoBadge } from "@/components/ui/neo-badge";
 import { useRazorpay } from "@/hooks/useRazorpay";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const plans = [
   {
@@ -58,11 +60,23 @@ const plans = [
 const Pricing = () => {
   const { initiatePayment, isLoading } = useRazorpay();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   const handlePlanClick = async (planName: string) => {
     if (planName === "Free") {
       // Scroll to upload section or navigate
       document.getElementById("upload-section")?.scrollIntoView({ behavior: "smooth" });
+      return;
+    }
+
+    // Require authentication for paid plans
+    if (!user) {
+      toast({
+        title: "Sign in required",
+        description: "Please sign in or create an account to purchase.",
+      });
+      navigate(`/auth?redirect=/#pricing&plan=${planName.toLowerCase()}`);
       return;
     }
 

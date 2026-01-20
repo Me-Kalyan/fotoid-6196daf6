@@ -23,10 +23,12 @@ const Auth: React.FC = () => {
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Redirect if already logged in
+  // Redirect if already logged in (handle redirect param)
   useEffect(() => {
     if (user && !loading) {
-      navigate('/');
+      const params = new URLSearchParams(window.location.search);
+      const redirectUrl = params.get('redirect') || '/';
+      navigate(redirectUrl);
     }
   }, [user, loading, navigate]);
 

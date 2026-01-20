@@ -68,18 +68,40 @@ serve(async (req) => {
       );
     }
 
-    // Get user from auth header
+    // Get user from auth header - REQUIRED
     const authHeader = req.headers.get("Authorization");
     const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY");
-    let userId: string | null = null;
 
-    if (authHeader && supabaseAnon) {
-      const userClient = createClient(SUPABASE_URL, supabaseAnon, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const { data: { user } } = await userClient.auth.getUser();
-      userId = user?.id ?? null;
+    if (!authHeader) {
+      console.error("No authorization header provided");
+      return new Response(
+        JSON.stringify({ error: "Authentication required", verified: false }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    if (!supabaseAnon) {
+      console.error("Missing Supabase anon key");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error", verified: false }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const userClient = createClient(SUPABASE_URL, supabaseAnon, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    
+    if (authError || !user) {
+      console.error("Authentication failed:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: "Authentication required", verified: false }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const userId = user.id;
 
     const {
       razorpay_order_id,
@@ -88,7 +110,7 @@ serve(async (req) => {
       plan_type,
     }: VerifyRequest = await req.json();
 
-    console.log(`Verifying payment: ${razorpay_payment_id} for order: ${razorpay_order_id}`);
+    console.log(`Verifying payment: ${razorpay_payment_id} for order: ${razorpay_order_id}, user: ${userId}`);
 
     // Verify signature
     const isValid = await verifySignature(
@@ -112,7 +134,7 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // For Pro subscription, update profile
-    if (plan_type === "pro" && userId) {
+    if (plan_type === "pro") {
       const { error: profileError } = await supabase
         .from("profiles")
         .update({
@@ -123,14 +145,16 @@ serve(async (req) => {
 
       if (profileError) {
         console.error("Error updating profile:", profileError);
-      } else {
-        console.log(`Pro subscription activated for user: ${userId}`);
+        return new Response(
+          JSON.stringify({ error: "Failed to activate subscription", verified: false }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
+      console.log(`Pro subscription activated for user: ${userId}`);
     }
 
     // Record the payment in download_history as a paid download credit
-    if (plan_type === "single" && userId) {
-      // For single purchase, we'll add a paid download credit
+    if (plan_type === "single") {
       const { error: historyError } = await supabase
         .from("download_history")
         .insert({
@@ -142,9 +166,12 @@ serve(async (req) => {
 
       if (historyError) {
         console.error("Error recording payment:", historyError);
-      } else {
-        console.log(`Single download credit added for user: ${userId}`);
+        return new Response(
+          JSON.stringify({ error: "Failed to add download credit", verified: false }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
+      console.log(`Single download credit added for user: ${userId}`);
     }
 
     return new Response(
