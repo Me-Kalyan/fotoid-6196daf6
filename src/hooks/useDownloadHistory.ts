@@ -44,10 +44,40 @@ export interface DownloadRecord {
   fingerprint: string | null;
 }
 
+interface UserProfile {
+  is_pro: boolean | null;
+  pro_expires_at: string | null;
+}
+
 export const useDownloadHistory = () => {
   const { user } = useAuth();
   const { fingerprint, isLoading: fingerprintLoading } = useFingerprint();
   const queryClient = useQueryClient();
+
+  // Query user's profile to check Pro status
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ['user-profile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_pro, pro_expires_at')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Profile fetch error:', error);
+        return null;
+      }
+      return data as UserProfile;
+    },
+    enabled: !!user,
+  });
+
+  // Check if user is Pro (subscription active and not expired)
+  const isProActive = profile?.is_pro === true && 
+    (!profile.pro_expires_at || new Date(profile.pro_expires_at) > new Date());
 
   // Query user's own downloads (for display purposes)
   const { data: downloads = [], isLoading: downloadsLoading } = useQuery({
@@ -88,13 +118,14 @@ export const useDownloadHistory = () => {
       const result = data?.[0] || { total_downloads: 0, can_download: true };
       return result;
     },
-    enabled: !!fingerprint,
+    enabled: !!fingerprint && !isProActive, // Skip fingerprint check for Pro users
   });
 
   // Calculate remaining based on fingerprint (cross-account protection)
+  // Pro users get unlimited downloads
   const fingerprintDownloadsUsed = Number(fingerprintLimit?.total_downloads || 0);
-  const freeDownloadsRemaining = Math.max(0, FREE_DOWNLOAD_LIMIT - fingerprintDownloadsUsed);
-  const canDownloadFree = fingerprintLimit?.can_download ?? true;
+  const freeDownloadsRemaining = isProActive ? Infinity : Math.max(0, FREE_DOWNLOAD_LIMIT - fingerprintDownloadsUsed);
+  const canDownloadFree = isProActive || (fingerprintLimit?.can_download ?? true);
 
   const recordDownloadMutation = useMutation({
     mutationFn: async ({ photoType, countryCode, isPaid }: { 
@@ -129,12 +160,13 @@ export const useDownloadHistory = () => {
 
   return {
     downloads,
-    isLoading: downloadsLoading || fingerprintLoading,
+    isLoading: downloadsLoading || fingerprintLoading || profileLoading,
     freeDownloadsUsed: fingerprintDownloadsUsed,
     freeDownloadsRemaining,
     canDownloadFree,
     freeDownloadLimit: FREE_DOWNLOAD_LIMIT,
     fingerprint,
+    isProActive,
     recordDownload: recordDownloadMutation.mutate,
     isRecording: recordDownloadMutation.isPending,
   };

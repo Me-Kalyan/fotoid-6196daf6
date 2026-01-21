@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { triggerHaptic } from "@/hooks/useHapticFeedback";
@@ -77,6 +78,7 @@ const loadRazorpayScript = (): Promise<void> => {
 export function useRazorpay() {
   const [isLoading, setIsLoading] = useState(false);
   const scriptLoadPromise = useRef<Promise<void> | null>(null);
+  const navigate = useNavigate();
 
   const initiatePayment = useCallback(
     async (planType: PlanType): Promise<boolean> => {
@@ -171,6 +173,9 @@ export function useRazorpay() {
                 description: verifyData.message,
               });
               setIsLoading(false);
+              
+              // Navigate to success page
+              navigate(`/subscription/success?plan=${planType}`);
               resolve(true);
             },
             modal: {

@@ -17,6 +17,8 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Install = lazy(() => import("./pages/Install"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Subscription = lazy(() => import("./pages/Subscription"));
+const SubscriptionSuccess = lazy(() => import("./pages/SubscriptionSuccess"));
+const Contact = lazy(() => import("./pages/Contact"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
@@ -41,6 +43,8 @@ const App = () => (
                 <Route path="/install" element={<Install />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/subscription" element={<Subscription />} />
+                <Route path="/subscription/success" element={<SubscriptionSuccess />} />
+                <Route path="/contact" element={<Contact />} />
                 <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                 <Route path="/terms-of-service" element={<TermsOfService />} />
                 <Route path="/refund-policy" element={<RefundPolicy />} />
