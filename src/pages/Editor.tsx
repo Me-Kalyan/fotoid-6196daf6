@@ -5,7 +5,10 @@ import { EditorProcessing } from "@/components/editor/EditorProcessing";
 import { EditorReview } from "@/components/editor/EditorReview";
 import { EditorDownload } from "@/components/editor/EditorDownload";
 import { EditorHeader } from "@/components/editor/EditorHeader";
+import { AuthGate } from "@/components/editor/AuthGate";
 import { ImageProcessingProvider, useImageProcessingContext } from "@/contexts/ImageProcessingContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 
 export type EditorState = "upload" | "processing" | "review" | "download";
 
@@ -127,6 +130,18 @@ const EditorContent = () => {
 };
 
 const Editor = () => {
+  const { user, loading } = useAuth();
+
+  // Show loading while checking auth
+  if (loading) {
+    return <LoadingSkeleton />;
+  }
+
+  // Require authentication
+  if (!user) {
+    return <AuthGate message="Sign in to create your passport photo" />;
+  }
+
   return (
     <ImageProcessingProvider>
       <EditorContent />

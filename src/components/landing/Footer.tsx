@@ -74,10 +74,15 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Legal */}
+          {/* Legal & Support */}
           <div>
-            <h4 className="font-heading font-bold">Legal</h4>
+            <h4 className="font-heading font-bold">Support</h4>
             <ul className="mt-3 space-y-2 text-sm text-primary-foreground/80">
+              <li>
+                <Link to="/contact" className="hover:text-primary-foreground hover:underline">
+                  Contact Us
+                </Link>
+              </li>
               <li>
                 <Link to="/privacy-policy" className="hover:text-primary-foreground hover:underline">
                   Privacy Policy
