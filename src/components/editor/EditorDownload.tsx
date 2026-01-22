@@ -22,6 +22,7 @@ import { useDownloadHistory } from "@/hooks/useDownloadHistory";
 import { useToast } from "@/hooks/use-toast";
 import type { CountryFormat } from "@/pages/Editor";
 import { drawImageWithFaceCrop, getPassportSpec } from "@/hooks/useFaceCrop";
+import { logger } from "@/lib/logger";
 
 interface EditorDownloadProps {
   selectedCountry: CountryFormat;
@@ -230,9 +231,9 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
         description: `Your ${selectedOption?.title || 'photo'} (${selectedCountry.dimensions}) has been downloaded.`,
       });
 
-      console.log("Download complete:", { selectedOutput, fileFormat, selectedCountry, photoDimensions });
+      logger.log("Download complete:", { selectedOutput, fileFormat, selectedCountry, photoDimensions });
     } catch (error) {
-      console.error("Download failed:", error);
+      logger.error("Download failed:", error);
       toast({
         title: "Download failed",
         description: "Please try again.",

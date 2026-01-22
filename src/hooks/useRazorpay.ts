@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { triggerHaptic } from "@/hooks/useHapticFeedback";
+import { logger } from "@/lib/logger";
 
 declare global {
   interface Window {
@@ -91,7 +92,7 @@ export function useRazorpay() {
         
         await scriptLoadPromise.current;
       } catch (error) {
-        console.error("Failed to load Razorpay:", error);
+        logger.error("Failed to load Razorpay:", error);
         toast({
           title: "Error",
           description: "Failed to load payment gateway. Please try again.",
@@ -111,7 +112,7 @@ export function useRazorpay() {
         });
 
         if (error || !data?.order_id) {
-          console.error("Error creating order:", error);
+          logger.error("Error creating order:", error);
           toast({
             title: "Error",
             description: "Failed to create payment order. Please try again.",
@@ -153,7 +154,7 @@ export function useRazorpay() {
               );
 
               if (verifyError || !verifyData?.verified) {
-                console.error("Payment verification failed:", verifyError);
+                logger.error("Payment verification failed:", verifyError);
                 triggerHaptic("error");
                 toast({
                   title: "Payment Failed",
@@ -189,7 +190,7 @@ export function useRazorpay() {
           razorpay.open();
         });
       } catch (error) {
-        console.error("Payment error:", error);
+        logger.error("Payment error:", error);
         triggerHaptic("error");
         toast({
           title: "Error",
