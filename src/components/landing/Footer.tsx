@@ -1,8 +1,9 @@
+import { forwardRef } from "react";
 import { motion } from "framer-motion";
 import { Shield, Heart } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
-const Footer = () => {
+const Footer = forwardRef<HTMLElement>((_, ref) => {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -21,7 +22,7 @@ const Footer = () => {
   };
 
   return (
-    <footer className="border-t-2 border-primary bg-primary px-4 py-12 text-primary-foreground">
+    <footer ref={ref} className="border-t-2 border-primary bg-primary px-4 py-12 text-primary-foreground">
       <div className="container mx-auto max-w-6xl">
         <div className="grid gap-8 md:grid-cols-4">
           {/* Brand */}
@@ -114,6 +115,8 @@ const Footer = () => {
       </div>
     </footer>
   );
-};
+});
+
+Footer.displayName = "Footer";
 
 export default Footer;

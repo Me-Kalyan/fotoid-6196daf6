@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, X, Share, Plus } from "lucide-react";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
@@ -6,7 +6,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { NeoButton } from "@/components/ui/neo-button";
 import { triggerHaptic } from "@/hooks/useHapticFeedback";
 
-const InstallBanner = () => {
+const InstallBanner = forwardRef<HTMLDivElement>((_, ref) => {
   const { canInstall, isInstalled, isIOS, promptInstall } = usePWAInstall();
   const isMobile = useIsMobile();
   const [isDismissed, setIsDismissed] = useState(() => {
@@ -40,6 +40,7 @@ const InstallBanner = () => {
   return (
     <AnimatePresence>
       <motion.div
+        ref={ref}
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 100, opacity: 0 }}
@@ -91,6 +92,8 @@ const InstallBanner = () => {
       </motion.div>
     </AnimatePresence>
   );
-};
+});
+
+InstallBanner.displayName = "InstallBanner";
 
 export default InstallBanner;
