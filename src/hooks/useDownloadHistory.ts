@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFingerprint } from './useFingerprint';
+import { logger } from '@/lib/logger';
 
 const FREE_DOWNLOAD_LIMIT = 2;
 
@@ -67,7 +68,7 @@ export const useDownloadHistory = () => {
         .single();
 
       if (error) {
-        console.error('Profile fetch error:', error);
+        logger.error('Profile fetch error:', error);
         return null;
       }
       return data as UserProfile;
@@ -110,7 +111,7 @@ export const useDownloadHistory = () => {
         });
 
       if (error) {
-        console.error('Fingerprint check error:', error);
+        logger.error('Fingerprint check error:', error);
         return { total_downloads: 0, can_download: true };
       }
       

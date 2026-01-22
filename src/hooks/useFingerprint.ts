@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
+import { logger } from '@/lib/logger';
 
 export const useFingerprint = () => {
   const [fingerprint, setFingerprint] = useState<string | null>(null);
@@ -12,7 +13,7 @@ export const useFingerprint = () => {
         const result = await fp.get();
         setFingerprint(result.visitorId);
       } catch (error) {
-        console.error('Failed to generate fingerprint:', error);
+        logger.error('Failed to generate fingerprint:', error);
         // Fallback: use a random ID stored in localStorage
         let fallbackId = localStorage.getItem('fp_fallback');
         if (!fallbackId) {
