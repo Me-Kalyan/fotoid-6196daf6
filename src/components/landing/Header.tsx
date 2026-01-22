@@ -71,33 +71,39 @@ const Header = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
-          <button
+          <motion.button
             onClick={() => {
               const element = document.getElementById("how-it-works");
               element?.scrollIntoView({ behavior: "smooth" });
             }}
-            className="font-heading text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
+            className="relative px-4 py-2 font-heading text-sm font-bold text-foreground bg-background border-2 border-primary shadow-[3px_3px_0px_0px_hsl(var(--primary))] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all duration-150"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             How it Works
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             onClick={() => {
               const element = document.getElementById("pricing");
               element?.scrollIntoView({ behavior: "smooth" });
             }}
-            className="font-heading text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
+            className="relative px-4 py-2 font-heading text-sm font-bold text-foreground bg-background border-2 border-primary shadow-[3px_3px_0px_0px_hsl(var(--primary))] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all duration-150"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             Pricing
-          </button>
-          <button
+          </motion.button>
+          <motion.button
             onClick={() => {
               const element = document.getElementById("countries");
               element?.scrollIntoView({ behavior: "smooth" });
             }}
-            className="font-heading text-sm font-bold text-muted-foreground transition-colors hover:text-foreground"
+            className="relative px-4 py-2 font-heading text-sm font-bold text-foreground bg-background border-2 border-primary shadow-[3px_3px_0px_0px_hsl(var(--primary))] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all duration-150"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             Countries
-          </button>
+          </motion.button>
         </motion.nav>
 
         {/* Desktop CTA / User Menu */}
