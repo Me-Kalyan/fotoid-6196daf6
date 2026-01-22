@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { 
-  Crown, 
-  Calendar, 
+import {
+  Crown,
+  Calendar,
   ArrowLeft,
   Loader2,
   Zap,
@@ -42,13 +42,7 @@ const Subscription = () => {
     }
   }, [user, authLoading, navigate]);
 
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    }
-  }, [user]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     if (!user) return;
 
     setLoading(true);
@@ -67,7 +61,13 @@ const Subscription = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+    }
+  }, [user, fetchProfile]);
 
   const handleRenew = async () => {
     const success = await initiatePayment("pro");
@@ -80,8 +80,8 @@ const Subscription = () => {
   // Note: Subscriptions expire automatically - no manual cancellation needed
   // Users pay for 30 days at a time with no auto-renewal
 
-  const proExpiresAt = profile?.pro_expires_at 
-    ? new Date(profile.pro_expires_at) 
+  const proExpiresAt = profile?.pro_expires_at
+    ? new Date(profile.pro_expires_at)
     : null;
 
   const isPro = profile?.is_pro && proExpiresAt && !isPast(proExpiresAt);
@@ -102,8 +102,8 @@ const Subscription = () => {
       {/* Header */}
       <header className="border-b-2 border-foreground bg-background px-4 py-4">
         <div className="container mx-auto max-w-4xl flex items-center justify-between">
-          <NeoButton 
-            variant="outline" 
+          <NeoButton
+            variant="outline"
             size="sm"
             onClick={() => navigate("/dashboard")}
           >
@@ -165,7 +165,7 @@ const Subscription = () => {
                       <div>
                         <p className="font-bold text-warning">Expiring Soon</p>
                         <p className="text-sm text-muted-foreground">
-                          Your subscription expires in {daysRemaining} day{daysRemaining !== 1 ? "s" : ""}. 
+                          Your subscription expires in {daysRemaining} day{daysRemaining !== 1 ? "s" : ""}.
                           Renew now to keep unlimited access.
                         </p>
                       </div>
@@ -216,7 +216,7 @@ const Subscription = () => {
 
                   {/* Actions */}
                   <div className="flex flex-col gap-3 pt-4 border-t-2 border-foreground">
-                    <NeoButton 
+                    <NeoButton
                       onClick={handleRenew}
                       disabled={paymentLoading}
                     >
@@ -229,7 +229,7 @@ const Subscription = () => {
                         </>
                       )}
                     </NeoButton>
-                    
+
                     <p className="text-xs text-muted-foreground text-center">
                       No auto-renewal. Your subscription will expire automatically on the date shown above.
                     </p>
@@ -255,7 +255,7 @@ const Subscription = () => {
                     <p className="text-sm text-muted-foreground mb-4">
                       Get back unlimited downloads and all Pro features for just ₹99/month.
                     </p>
-                    <NeoButton 
+                    <NeoButton
                       onClick={handleRenew}
                       disabled={paymentLoading}
                     >
@@ -288,7 +288,7 @@ const Subscription = () => {
                     <p className="text-sm text-muted-foreground mb-4">
                       Get unlimited downloads, priority processing, and more for just ₹99/month.
                     </p>
-                    <NeoButton 
+                    <NeoButton
                       onClick={handleRenew}
                       disabled={paymentLoading}
                     >

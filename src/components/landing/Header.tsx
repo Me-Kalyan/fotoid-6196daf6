@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Zap, User, LogOut, LayoutDashboard } from "lucide-react";
+import { Zap, User, LogOut, LayoutDashboard, Crown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { NeoButton } from "@/components/ui/neo-button";
 import { NeoBadge } from "@/components/ui/neo-badge";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useAuth } from "@/contexts/AuthContext";
+import { useDownloadHistory } from "@/hooks/useDownloadHistory";
 import { MobileMenu } from "./MobileMenu";
 import {
   DropdownMenu,
@@ -17,6 +18,7 @@ import {
 const Header = () => {
   const navigate = useNavigate();
   const { user, signOut, loading } = useAuth();
+  const { isProActive, freeDownloadsRemaining } = useDownloadHistory();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Lock body scroll when mobile menu is open
@@ -106,11 +108,18 @@ const Header = () => {
           transition={{ duration: 0.4, delay: 0.2 }}
         >
           <ThemeToggle />
-          
-          <NeoBadge variant="highlight" size="sm">
-            2 Free
-          </NeoBadge>
-          
+
+          {isProActive ? (
+            <NeoBadge variant="default" size="sm" className="bg-success text-success-foreground border-success">
+              <Crown className="w-3 h-3 mr-1" />
+              Pro
+            </NeoBadge>
+          ) : (
+            <NeoBadge variant="highlight" size="sm">
+              {freeDownloadsRemaining} Free
+            </NeoBadge>
+          )}
+
           {loading ? (
             <div className="h-9 w-20 bg-muted animate-pulse border-2 border-primary" />
           ) : user ? (
@@ -124,20 +133,20 @@ const Header = () => {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="border-2 border-primary">
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => navigate('/dashboard')}
                   className="font-heading cursor-pointer"
                 >
                   <LayoutDashboard className="h-4 w-4 mr-2" />
                   Dashboard
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => navigate('/editor')}
                   className="font-heading cursor-pointer"
                 >
                   Create Photo
                 </DropdownMenuItem>
-                <DropdownMenuItem 
+                <DropdownMenuItem
                   onClick={() => signOut()}
                   className="font-heading cursor-pointer text-destructive"
                 >
@@ -154,9 +163,9 @@ const Header = () => {
         </motion.div>
 
         {/* Mobile Menu Toggle */}
-        <MobileMenu 
-          isOpen={mobileMenuOpen} 
-          onToggle={() => setMobileMenuOpen(!mobileMenuOpen)} 
+        <MobileMenu
+          isOpen={mobileMenuOpen}
+          onToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
         />
       </div>
     </header>

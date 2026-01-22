@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
-import { 
-  Download, 
-  FileImage, 
-  Grid3X3, 
+import {
+  Download,
+  FileImage,
+  Grid3X3,
   Printer,
   ArrowLeft,
   Check,
@@ -21,6 +21,7 @@ import { generatePrintSheet, downloadSheet, type SheetSize } from "@/utils/print
 import { useDownloadHistory } from "@/hooks/useDownloadHistory";
 import { useToast } from "@/hooks/use-toast";
 import type { CountryFormat } from "@/pages/Editor";
+import { drawImageWithFaceCrop, getPassportSpec } from "@/hooks/useFaceCrop";
 
 interface EditorDownloadProps {
   selectedCountry: CountryFormat;
@@ -89,27 +90,57 @@ const bgColorHex = {
   blue: "#D6EAF8",
 };
 
+// Helper to parse dimension strings like "2×2 inches" or "35×45 mm" into inches
+function parseDimensions(dimensions: string): { width: number; height: number } {
+  // Remove extra spaces and normalize the × symbol
+  const normalized = dimensions.replace(/\s+/g, ' ').replace(/x/gi, '×');
+
+  // Match patterns like "2×2 inches", "35×45 mm", "4×6 inches"
+  const match = normalized.match(/(\d+(?:\.\d+)?)\s*×\s*(\d+(?:\.\d+)?)\s*(inch(?:es)?|in|mm)/i);
+
+  if (!match) {
+    // Default to 2×2 inches if parsing fails
+    return { width: 2, height: 2 };
+  }
+
+  let width = parseFloat(match[1]);
+  let height = parseFloat(match[2]);
+  const unit = match[3].toLowerCase();
+
+  // Convert mm to inches (1 inch = 25.4 mm)
+  if (unit === 'mm') {
+    width = width / 25.4;
+    height = height / 25.4;
+  }
+
+  return { width, height };
+}
+
 export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownloadProps) => {
   const [selectedOutput, setSelectedOutput] = useState<OutputFormat>("single");
   const [fileFormat, setFileFormat] = useState<FileFormat>("jpg");
   const [dpi, setDpi] = useState<number>(300);
   const [jpgQuality, setJpgQuality] = useState<JpgQuality>(90);
   const [isDownloading, setIsDownloading] = useState(false);
-  
+
   const { processedImage } = useImageProcessingContext();
-  const { 
-    freeDownloadsRemaining, 
-    canDownloadFree, 
-    recordDownload, 
-    isLoading: historyLoading 
+  const {
+    freeDownloadsRemaining,
+    canDownloadFree,
+    recordDownload,
+    isLoading: historyLoading,
+    isProActive,
   } = useDownloadHistory();
   const { toast } = useToast();
-  
+
   const selectedOption = outputOptions.find(o => o.id === selectedOutput);
+
+  // Parse the selected country's dimensions
+  const photoDimensions = parseDimensions(selectedCountry.dimensions);
 
   const handleDownload = useCallback(async () => {
     if (!processedImage?.processedImage) return;
-    
+
     // Check if user can download for free
     if (!canDownloadFree) {
       toast({
@@ -119,50 +150,87 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
       });
       return;
     }
-    
+
     setIsDownloading(true);
-    
+
     try {
       const timestamp = Date.now();
       const countryCode = selectedCountry.code.toLowerCase();
-      
+
       if (selectedOutput === "single") {
-        // Download single photo
-        const link = document.createElement("a");
-        link.href = processedImage.processedImage;
-        link.download = `passport-photo-${countryCode}-${timestamp}.${fileFormat}`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        // Download single photo with correct dimensions
+        // Create a canvas to resize the photo to the correct physical size
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = reject;
+          img.src = processedImage.processedImage;
+        });
+
+        // Calculate pixel dimensions based on DPI and photo size
+        const targetWidthPx = Math.round(photoDimensions.width * dpi);
+        const targetHeightPx = Math.round(photoDimensions.height * dpi);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = targetWidthPx;
+        canvas.height = targetHeightPx;
+
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          // Fill with background color first
+          ctx.fillStyle = bgColorHex[bgColor];
+          ctx.fillRect(0, 0, targetWidthPx, targetHeightPx);
+
+          // Use smart crop for final download
+          const spec = getPassportSpec(selectedCountry.code);
+          drawImageWithFaceCrop(ctx, img, processedImage.faceLandmarks, targetWidthPx, targetHeightPx, spec);
+
+          // Generate download
+          const mimeType = fileFormat === 'png' ? 'image/png' : 'image/jpeg';
+          const quality = fileFormat === 'jpg' ? jpgQuality / 100 : undefined;
+          const dataUrl = canvas.toDataURL(mimeType, quality);
+
+          const link = document.createElement("a");
+          link.href = dataUrl;
+          link.download = `passport-photo-${countryCode}-${timestamp}.${fileFormat}`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
       } else {
-        // Generate and download print sheet
+        // Generate and download print sheet with correct photo dimensions
         const sheetSize = selectedOption?.sheetSize;
         if (!sheetSize) return;
-        
+
         const sheet = await generatePrintSheet(
           processedImage.processedImage,
           sheetSize,
           bgColorHex[bgColor],
-          dpi
+          dpi,
+          photoDimensions.width,
+          photoDimensions.height,
+          processedImage.faceLandmarks,
+          selectedCountry.code
         );
-        
+
         const filename = `passport-sheet-${sheetSize}-${countryCode}-${timestamp}.${fileFormat}`;
         downloadSheet(sheet.dataUrl, filename);
       }
-      
+
       // Record the download
       recordDownload({
         photoType: selectedOption?.id || 'single',
         countryCode: selectedCountry.code,
         isPaid: false,
       });
-      
+
       toast({
         title: "Download complete!",
-        description: `Your ${selectedOption?.title || 'photo'} has been downloaded.`,
+        description: `Your ${selectedOption?.title || 'photo'} (${selectedCountry.dimensions}) has been downloaded.`,
       });
-      
-      console.log("Download complete:", { selectedOutput, fileFormat, selectedCountry });
+
+      console.log("Download complete:", { selectedOutput, fileFormat, selectedCountry, photoDimensions });
     } catch (error) {
       console.error("Download failed:", error);
       toast({
@@ -173,7 +241,7 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
     } finally {
       setIsDownloading(false);
     }
-  }, [processedImage, selectedOutput, selectedOption, fileFormat, selectedCountry, bgColor, dpi, canDownloadFree, recordDownload, toast]);
+  }, [processedImage, selectedOutput, selectedOption, fileFormat, selectedCountry, bgColor, dpi, jpgQuality, canDownloadFree, recordDownload, toast, photoDimensions]);
 
   const getDpiLabel = (value: number) => {
     if (value <= 72) return "Web (72 DPI)";
@@ -221,18 +289,16 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
               {outputOptions.map((option) => (
                 <motion.div
                   key={option.id}
-                  className={`relative p-4 border-3 cursor-pointer transition-all ${
-                    selectedOutput === option.id 
-                      ? "border-brand bg-brand/10 shadow-brutal" 
-                      : "border-primary hover:shadow-brutal-hover bg-card"
-                  }`}
+                  className={`relative p-4 border-3 cursor-pointer transition-all ${selectedOutput === option.id
+                    ? "border-brand bg-brand/10 shadow-brutal"
+                    : "border-primary hover:shadow-brutal-hover bg-card"
+                    }`}
                   onClick={() => setSelectedOutput(option.id)}
                   whileTap={{ scale: 0.98 }}
                 >
                   <div className="flex flex-col items-center text-center">
-                    <div className={`w-12 h-12 mb-2 border-2 border-primary flex items-center justify-center ${
-                      selectedOutput === option.id ? "bg-brand text-brand-foreground" : "bg-secondary"
-                    }`}>
+                    <div className={`w-12 h-12 mb-2 border-2 border-primary flex items-center justify-center ${selectedOutput === option.id ? "bg-brand text-brand-foreground" : "bg-secondary"
+                      }`}>
                       <option.icon className="w-6 h-6" />
                     </div>
                     <h3 className="font-heading font-bold text-sm">{option.title}</h3>
@@ -266,11 +332,10 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
             <div className="flex gap-3">
               <button
                 onClick={() => setFileFormat("jpg")}
-                className={`flex-1 p-3 border-3 transition-all ${
-                  fileFormat === "jpg"
-                    ? "border-brand bg-brand/10 shadow-brutal"
-                    : "border-primary hover:shadow-brutal-hover"
-                }`}
+                className={`flex-1 p-3 border-3 transition-all ${fileFormat === "jpg"
+                  ? "border-brand bg-brand/10 shadow-brutal"
+                  : "border-primary hover:shadow-brutal-hover"
+                  }`}
               >
                 <div className="font-heading font-bold">JPG</div>
                 <p className="text-xs text-muted-foreground">
@@ -280,11 +345,10 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
 
               <button
                 onClick={() => setFileFormat("png")}
-                className={`flex-1 p-3 border-3 transition-all ${
-                  fileFormat === "png"
-                    ? "border-brand bg-brand/10 shadow-brutal"
-                    : "border-primary hover:shadow-brutal-hover"
-                }`}
+                className={`flex-1 p-3 border-3 transition-all ${fileFormat === "png"
+                  ? "border-brand bg-brand/10 shadow-brutal"
+                  : "border-primary hover:shadow-brutal-hover"
+                  }`}
               >
                 <div className="font-heading font-bold">PNG</div>
                 <p className="text-xs text-muted-foreground">
@@ -306,28 +370,27 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
                 <h2 className="font-heading font-bold text-lg">Compression Quality</h2>
                 <span className="text-sm font-bold text-brand">{jpgQuality}%</span>
               </div>
-              
+
               <div className="p-4 border-3 border-primary bg-card">
                 <div className="grid grid-cols-4 gap-2 mb-3">
                   {([70, 80, 90, 100] as JpgQuality[]).map((quality) => (
                     <button
                       key={quality}
                       onClick={() => setJpgQuality(quality)}
-                      className={`py-2 px-3 border-2 text-sm font-bold transition-all ${
-                        jpgQuality === quality
-                          ? "border-brand bg-brand text-brand-foreground"
-                          : "border-primary hover:bg-secondary"
-                      }`}
+                      className={`py-2 px-3 border-2 text-sm font-bold transition-all ${jpgQuality === quality
+                        ? "border-brand bg-brand text-brand-foreground"
+                        : "border-primary hover:bg-secondary"
+                        }`}
                     >
                       {quality}%
                     </button>
                   ))}
                 </div>
-                
+
                 <div className="text-xs text-muted-foreground border-t border-dashed border-primary/30 pt-3">
-                  {jpgQuality === 100 
-                    ? "✓ Maximum quality, larger file size (~2-3 MB)" 
-                    : jpgQuality === 90 
+                  {jpgQuality === 100
+                    ? "✓ Maximum quality, larger file size (~2-3 MB)"
+                    : jpgQuality === 90
                       ? "✓ Recommended - great quality, smaller file (~500KB-1MB)"
                       : jpgQuality === 80
                         ? "○ Good balance of quality and size (~300-500KB)"
@@ -348,7 +411,7 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
               <h2 className="font-heading font-bold text-lg">Output Quality</h2>
               <span className="text-sm font-bold text-brand">{getDpiLabel(dpi)}</span>
             </div>
-            
+
             <div className="p-4 border-3 border-primary bg-card">
               <div className="flex items-center gap-4 mb-3">
                 <Monitor className="w-5 h-5 text-muted-foreground" />
@@ -362,18 +425,18 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
                 />
                 <PrinterCheck className="w-5 h-5 text-brand" />
               </div>
-              
+
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>72 DPI</span>
                 <span>150 DPI</span>
                 <span>300 DPI</span>
               </div>
-              
+
               <p className="text-xs text-muted-foreground mt-3 border-t border-dashed border-primary/30 pt-3">
-                {dpi >= 200 
-                  ? "✓ Great for professional printing" 
-                  : dpi >= 150 
-                    ? "○ Suitable for home printing" 
+                {dpi >= 200
+                  ? "✓ Great for professional printing"
+                  : dpi >= 150
+                    ? "○ Suitable for home printing"
                     : "○ Best for web/digital use only"}
               </p>
             </div>
@@ -425,13 +488,23 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className={`mt-6 p-3 border-2 border-dashed text-center ${
-              canDownloadFree 
-                ? "border-primary bg-highlight/10" 
+            className={`mt-6 p-3 border-2 border-dashed text-center ${isProActive
+              ? "border-success bg-success/10"
+              : canDownloadFree
+                ? "border-primary bg-highlight/10"
                 : "border-destructive bg-destructive/10"
-            }`}
+              }`}
           >
-            {canDownloadFree ? (
+            {isProActive ? (
+              <>
+                <p className="font-bold text-sm text-success">
+                  ✅ Pro Subscriber
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Unlimited downloads included
+                </p>
+              </>
+            ) : canDownloadFree ? (
               <>
                 <p className="font-bold text-sm">
                   <span className="text-brand">{freeDownloadsRemaining}</span> free download{freeDownloadsRemaining !== 1 ? 's' : ''} remaining
@@ -465,22 +538,29 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
         className="lg:w-[400px] xl:w-[480px] border-t-3 lg:border-t-0 lg:border-l-3 border-primary bg-secondary/30 p-6 flex flex-col"
       >
         <h2 className="font-heading font-bold text-lg mb-4">Preview</h2>
-        
+
         {processedImage?.processedImage ? (
           <div className="flex-1 flex items-center justify-center">
             {selectedOutput === "single" ? (
               <motion.div
-                key="single"
+                key={`single-${selectedCountry.dimensions}`}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="border-3 border-primary shadow-brutal overflow-hidden"
+                className="border-3 border-primary shadow-brutal overflow-hidden flex flex-col items-center"
                 style={{ backgroundColor: bgColorHex[bgColor] }}
               >
                 <img
                   src={processedImage.processedImage}
                   alt="Processed passport photo"
-                  className="w-48 h-48 object-cover"
+                  className="object-cover"
+                  style={{
+                    width: photoDimensions.width >= photoDimensions.height ? '200px' : `${200 * (photoDimensions.width / photoDimensions.height)}px`,
+                    height: photoDimensions.height >= photoDimensions.width ? '200px' : `${200 * (photoDimensions.height / photoDimensions.width)}px`,
+                  }}
                 />
+                <div className="text-xs font-mono py-1 text-muted-foreground bg-background/50 w-full text-center border-t border-primary/20">
+                  {selectedCountry.dimensions}
+                </div>
               </motion.div>
             ) : selectedOption?.sheetSize ? (
               <PrintSheetPreview
@@ -488,6 +568,8 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
                 photoUrl={processedImage.processedImage}
                 sheetSize={selectedOption.sheetSize}
                 bgColor={bgColorHex[bgColor]}
+                faceLandmarks={processedImage.faceLandmarks}
+                countryCode={selectedCountry.code}
               />
             ) : null}
           </div>

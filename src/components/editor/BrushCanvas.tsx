@@ -1,9 +1,11 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { motion } from "framer-motion";
-import { User, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { User, ZoomIn, ZoomOut, RotateCcw, RefreshCw, Ruler } from "lucide-react";
 import type { BrushTool } from "@/hooks/useCanvasBrush";
 import type { FaceLandmarks } from "@/hooks/useImageProcessing";
+import type { CountryFormat } from "@/pages/Editor";
 import { FaceGuideOverlay } from "./FaceGuideOverlay";
+import { drawImageWithFaceCrop, getPassportSpec } from "@/hooks/useFaceCrop";
 
 interface BrushCanvasProps {
   bgColor: "white" | "grey" | "blue";
@@ -17,6 +19,7 @@ interface BrushCanvasProps {
   onPushHistory: (imageData: ImageData) => void;
   undoImageData: ImageData | null;
   redoImageData: ImageData | null;
+  selectedCountry?: CountryFormat;
 }
 
 const bgColorMap = {
@@ -37,22 +40,23 @@ export const BrushCanvas = ({
   onPushHistory,
   undoImageData,
   redoImageData,
+  selectedCountry,
 }: BrushCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const maskCanvasRef = useRef<HTMLCanvasElement>(null);
   const originalImgRef = useRef<HTMLImageElement | null>(null);
   const processedImgRef = useRef<HTMLImageElement | null>(null);
-  
+
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [showGuides, setShowGuides] = useState(true);
   const [canvasSize, setCanvasSize] = useState({ width: 320, height: 320 });
   const [imagesLoaded, setImagesLoaded] = useState(false);
-  
+
   const dragStartRef = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
-  
+
   // Touch gesture tracking for pinch-to-zoom
   const touchStartRef = useRef<{
     touches: { x: number; y: number }[];
@@ -62,28 +66,62 @@ export const BrushCanvas = ({
     center: { x: number; y: number };
   } | null>(null);
 
-  // Load images
+  // Helper to parse dimensions string
+  const parseDimensions = (dimensions?: string): { width: number; height: number } => {
+    if (!dimensions) return { width: 2, height: 2 };
+    const normalized = dimensions.replace(/\s+/g, ' ').replace(/x/gi, '×');
+    const match = normalized.match(/(\d+(?:\.\d+)?)\s*×\s*(\d+(?:\.\d+)?)\s*(inch(?:es)?|in|mm)?/i);
+    if (!match) return { width: 2, height: 2 };
+    let width = parseFloat(match[1]);
+    let height = parseFloat(match[2]);
+    const unit = match[3]?.toLowerCase();
+    if (unit === 'mm') {
+      width = width / 25.4;
+      height = height / 25.4;
+    }
+    return { width, height };
+  };
+
+  // Load images and set canvas size based on selected dimensions
   useEffect(() => {
     if (!processedImageUrl) return;
-    
+
     const loadImages = async () => {
+      setImagesLoaded(false);
       const processed = new Image();
       processed.crossOrigin = "anonymous";
-      
+
       await new Promise<void>((resolve) => {
         processed.onload = () => resolve();
         processed.src = processedImageUrl;
       });
-      
+
       processedImgRef.current = processed;
-      
-      // Calculate canvas size maintaining aspect ratio
-      const maxSize = 320;
-      const ratio = Math.min(maxSize / processed.width, maxSize / processed.height);
-      const width = Math.floor(processed.width * ratio);
-      const height = Math.floor(processed.height * ratio);
-      setCanvasSize({ width, height });
-      
+
+      // Calculate canvas size based on SELECTED COUNTRY dimensions
+      // This ensures the preview shows the correct aspect ratio
+      const photoDims = parseDimensions(selectedCountry?.dimensions);
+      const photoAspectRatio = photoDims.height / photoDims.width;
+
+      // Max preview size while maintaining aspect ratio
+      const maxWidth = 320;
+      const maxHeight = 400;
+
+      let width: number, height: number;
+
+      // Calculate size that fits within max bounds with correct aspect ratio
+      if (photoAspectRatio >= 1) {
+        // Portrait or square - height is limiting factor
+        height = Math.min(maxHeight, maxWidth * photoAspectRatio);
+        width = height / photoAspectRatio;
+      } else {
+        // Landscape - width is limiting factor
+        width = Math.min(maxWidth, maxHeight / photoAspectRatio);
+        height = width * photoAspectRatio;
+      }
+
+      setCanvasSize({ width: Math.floor(width), height: Math.floor(height) });
+
       if (originalImageUrl) {
         const original = new Image();
         original.crossOrigin = "anonymous";
@@ -93,38 +131,39 @@ export const BrushCanvas = ({
         });
         originalImgRef.current = original;
       }
-      
+
       setImagesLoaded(true);
     };
-    
+
     loadImages();
-  }, [processedImageUrl, originalImageUrl]);
+  }, [processedImageUrl, originalImageUrl, selectedCountry?.dimensions]);
 
   // Initialize canvas when images are loaded
   useEffect(() => {
     if (!imagesLoaded || !processedImgRef.current) return;
-    
+
     const canvas = canvasRef.current;
     const maskCanvas = maskCanvasRef.current;
     if (!canvas || !maskCanvas) return;
-    
+
     const ctx = canvas.getContext("2d");
     const maskCtx = maskCanvas.getContext("2d");
     if (!ctx || !maskCtx) return;
-    
-    // Set canvas dimensions
+
+    // Set canvas dimensions (this also clears the canvas)
     canvas.width = canvasSize.width;
     canvas.height = canvasSize.height;
     maskCanvas.width = canvasSize.width;
     maskCanvas.height = canvasSize.height;
-    
-    // Draw processed image
-    ctx.drawImage(processedImgRef.current, 0, 0, canvasSize.width, canvasSize.height);
-    
+
+    // Draw processed image using smart crop
+    const spec = getPassportSpec(selectedCountry?.code || "DEFAULT");
+    drawImageWithFaceCrop(ctx, processedImgRef.current, faceLandmarks, canvasSize.width, canvasSize.height, spec);
+
     // Initialize mask as fully white (all processed/transparent bg shown)
     maskCtx.fillStyle = "#FFFFFF";
     maskCtx.fillRect(0, 0, canvasSize.width, canvasSize.height);
-    
+
     // Push initial state to history
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     onPushHistory(imageData);
@@ -153,11 +192,11 @@ export const BrushCanvas = ({
   const getCanvasCoords = useCallback((e: React.MouseEvent | React.TouchEvent): { x: number; y: number } | null => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
-    
+
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-    
+
     let clientX: number, clientY: number;
     if ("touches" in e) {
       if (e.touches.length === 0) return null;
@@ -167,60 +206,28 @@ export const BrushCanvas = ({
       clientX = e.clientX;
       clientY = e.clientY;
     }
-    
+
     return {
       x: (clientX - rect.left) * scaleX,
       y: (clientY - rect.top) * scaleY,
     };
   }, []);
 
-  // Draw brush stroke
-  const drawStroke = useCallback((from: { x: number; y: number }, to: { x: number; y: number }) => {
-    const canvas = canvasRef.current;
-    const maskCanvas = maskCanvasRef.current;
-    if (!canvas || !maskCanvas || !originalImgRef.current || !processedImgRef.current) return;
-    
-    const ctx = canvas.getContext("2d");
-    const maskCtx = maskCanvas.getContext("2d");
-    if (!ctx || !maskCtx) return;
-    
-    // Draw on mask
-    maskCtx.lineCap = "round";
-    maskCtx.lineJoin = "round";
-    maskCtx.lineWidth = brushSize;
-    
-    if (activeTool === "eraser") {
-      // Eraser: paint black on mask (show original with background)
-      maskCtx.strokeStyle = "#000000";
-    } else if (activeTool === "restore") {
-      // Restore: paint white on mask (show processed/transparent)
-      maskCtx.strokeStyle = "#FFFFFF";
-    }
-    
-    maskCtx.beginPath();
-    maskCtx.moveTo(from.x, from.y);
-    maskCtx.lineTo(to.x, to.y);
-    maskCtx.stroke();
-    
-    // Composite: redraw canvas based on mask
-    compositeImages();
-  }, [activeTool, brushSize]);
-
   // Composite original and processed based on mask
   const compositeImages = useCallback(() => {
     const canvas = canvasRef.current;
     const maskCanvas = maskCanvasRef.current;
     if (!canvas || !maskCanvas || !originalImgRef.current || !processedImgRef.current) return;
-    
+
     const ctx = canvas.getContext("2d");
     const maskCtx = maskCanvas.getContext("2d");
     if (!ctx || !maskCtx) return;
-    
+
     const { width, height } = canvasSize;
-    
+
     // Get mask data
     const maskData = maskCtx.getImageData(0, 0, width, height);
-    
+
     // Create temp canvases for original and processed
     const tempOriginal = document.createElement("canvas");
     const tempProcessed = document.createElement("canvas");
@@ -228,30 +235,63 @@ export const BrushCanvas = ({
     tempOriginal.height = height;
     tempProcessed.width = width;
     tempProcessed.height = height;
-    
+
     const origCtx = tempOriginal.getContext("2d");
     const procCtx = tempProcessed.getContext("2d");
     if (!origCtx || !procCtx) return;
-    
-    origCtx.drawImage(originalImgRef.current, 0, 0, width, height);
-    procCtx.drawImage(processedImgRef.current, 0, 0, width, height);
-    
+
+    const spec = getPassportSpec(selectedCountry?.code || "DEFAULT");
+    drawImageWithFaceCrop(origCtx, originalImgRef.current, faceLandmarks, width, height, spec);
+    drawImageWithFaceCrop(procCtx, processedImgRef.current, faceLandmarks, width, height, spec);
+
     const origData = origCtx.getImageData(0, 0, width, height);
     const procData = procCtx.getImageData(0, 0, width, height);
     const resultData = ctx.createImageData(width, height);
-    
+
     // Blend based on mask (white = processed, black = original)
     for (let i = 0; i < maskData.data.length; i += 4) {
       const maskValue = maskData.data[i] / 255; // 0 = original, 1 = processed
-      
+
       resultData.data[i] = Math.round(origData.data[i] * (1 - maskValue) + procData.data[i] * maskValue);
       resultData.data[i + 1] = Math.round(origData.data[i + 1] * (1 - maskValue) + procData.data[i + 1] * maskValue);
       resultData.data[i + 2] = Math.round(origData.data[i + 2] * (1 - maskValue) + procData.data[i + 2] * maskValue);
       resultData.data[i + 3] = Math.round(origData.data[i + 3] * (1 - maskValue) + procData.data[i + 3] * maskValue);
     }
-    
+
     ctx.putImageData(resultData, 0, 0);
   }, [canvasSize]);
+
+  // Draw brush stroke
+  const drawStroke = useCallback((from: { x: number; y: number }, to: { x: number; y: number }) => {
+    const canvas = canvasRef.current;
+    const maskCanvas = maskCanvasRef.current;
+    if (!canvas || !maskCanvas || !originalImgRef.current || !processedImgRef.current) return;
+
+    const ctx = canvas.getContext("2d");
+    const maskCtx = maskCanvas.getContext("2d");
+    if (!ctx || !maskCtx) return;
+
+    // Draw on mask
+    maskCtx.lineCap = "round";
+    maskCtx.lineJoin = "round";
+    maskCtx.lineWidth = brushSize;
+
+    if (activeTool === "eraser") {
+      // Eraser: paint black on mask (show original with background)
+      maskCtx.strokeStyle = "#000000";
+    } else if (activeTool === "restore") {
+      // Restore: paint white on mask (show processed/transparent)
+      maskCtx.strokeStyle = "#FFFFFF";
+    }
+
+    maskCtx.beginPath();
+    maskCtx.moveTo(from.x, from.y);
+    maskCtx.lineTo(to.x, to.y);
+    maskCtx.stroke();
+
+    // Composite: redraw canvas based on mask
+    compositeImages();
+  }, [activeTool, brushSize, compositeImages]);
 
   // Calculate distance between two touch points
   const getTouchDistance = (touches: React.TouchList): number => {
@@ -281,7 +321,7 @@ export const BrushCanvas = ({
         e.preventDefault();
         const distance = getTouchDistance(e.touches);
         const center = getTouchCenter(e.touches);
-        
+
         touchStartRef.current = {
           touches: Array.from(e.touches).map(t => ({ x: t.clientX, y: t.clientY })),
           initialDistance: distance,
@@ -292,7 +332,7 @@ export const BrushCanvas = ({
         return;
       }
     }
-    
+
     if (activeTool === "eraser" || activeTool === "restore") {
       setIsDrawing(true);
       const coords = getCanvasCoords(e);
@@ -319,21 +359,21 @@ export const BrushCanvas = ({
       const currentDistance = getTouchDistance(e.touches);
       const scale = currentDistance / touchStartRef.current.initialDistance;
       const newZoom = Math.min(200, Math.max(50, touchStartRef.current.initialZoom * scale));
-      
+
       setZoom(newZoom);
-      
+
       // Also handle pan during pinch
       const currentCenter = getTouchCenter(e.touches);
       const deltaX = currentCenter.x - touchStartRef.current.center.x;
       const deltaY = currentCenter.y - touchStartRef.current.center.y;
-      
+
       setPosition({
         x: touchStartRef.current.initialPosition.x + deltaX,
         y: touchStartRef.current.initialPosition.y + deltaY,
       });
       return;
     }
-    
+
     if (isDrawing && (activeTool === "eraser" || activeTool === "restore")) {
       const coords = getCanvasCoords(e);
       if (coords && lastPointRef.current) {
@@ -357,7 +397,7 @@ export const BrushCanvas = ({
     if (e && "touches" in e && e.touches.length < 2) {
       touchStartRef.current = null;
     }
-    
+
     if (isDrawing) {
       // Push to history after stroke ends
       const canvas = canvasRef.current;
@@ -386,6 +426,35 @@ export const BrushCanvas = ({
     setPosition({ x: 0, y: 0 });
   };
 
+  // Reset edits to initial processed image (keeps AI background removal, undoes user brush edits)
+  const resetEdits = useCallback(() => {
+    if (!processedImgRef.current) return;
+
+    const canvas = canvasRef.current;
+    const maskCanvas = maskCanvasRef.current;
+    if (!canvas || !maskCanvas) return;
+
+    const ctx = canvas.getContext("2d");
+    const maskCtx = maskCanvas.getContext("2d");
+    if (!ctx || !maskCtx) return;
+
+    // Reset mask to fully white (show processed image only)
+    maskCtx.fillStyle = "#FFFFFF";
+    maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
+
+    // Clear and redraw the canvas with the processed image
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(processedImgRef.current, 0, 0, canvas.width, canvas.height);
+
+    // Push to history as new state
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    onPushHistory(imageData);
+
+    // Reset view
+    setZoom(100);
+    setPosition({ x: 0, y: 0 });
+  }, [onPushHistory, setZoom]);
+
   // Cursor based on tool
   const getCursor = () => {
     switch (activeTool) {
@@ -404,7 +473,7 @@ export const BrushCanvas = ({
       {/* Canvas Container */}
       <motion.div
         className="relative border-3 border-primary shadow-brutal-lg overflow-hidden touch-none"
-        style={{ 
+        style={{
           backgroundColor: bgColorMap[bgColor],
           cursor: getCursor(),
         }}
@@ -470,7 +539,7 @@ export const BrushCanvas = ({
 
         {/* Brush cursor preview */}
         {(activeTool === "eraser" || activeTool === "restore") && (
-          <div 
+          <div
             className="absolute pointer-events-none border-2 rounded-full"
             style={{
               width: brushSize * (zoom / 100),
@@ -484,6 +553,14 @@ export const BrushCanvas = ({
             }}
           />
         )}
+
+        {/* Size dimensions badge */}
+        {selectedCountry && (
+          <div className="absolute top-2 left-2 bg-background/90 border-2 border-primary px-2 py-1 shadow-brutal pointer-events-none flex items-center gap-1.5">
+            <Ruler className="w-3 h-3 text-brand" />
+            <span className="text-xs font-bold">{selectedCountry.dimensions}</span>
+          </div>
+        )}
       </motion.div>
 
       {/* Controls */}
@@ -496,9 +573,9 @@ export const BrushCanvas = ({
           >
             <ZoomOut className="w-4 h-4" />
           </button>
-          
+
           <span className="font-mono text-sm w-12 text-center">{zoom}%</span>
-          
+
           <button
             onClick={() => setZoom(Math.min(200, zoom + 10))}
             className="p-2 hover:bg-secondary transition-colors"
@@ -512,17 +589,25 @@ export const BrushCanvas = ({
           <button
             onClick={resetView}
             className="p-2 hover:bg-secondary transition-colors"
-            title="Reset view"
+            title="Reset zoom & position"
           >
             <RotateCcw className="w-4 h-4" />
           </button>
         </div>
 
         <button
+          onClick={resetEdits}
+          className="px-3 py-2 border-2 border-primary text-sm font-bold bg-background hover:bg-destructive hover:text-destructive-foreground transition-all flex items-center gap-2"
+          title="Reset all brush edits to original AI result"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Reset Edits
+        </button>
+
+        <button
           onClick={() => setShowGuides(!showGuides)}
-          className={`px-3 py-2 border-2 border-primary text-sm font-bold transition-all ${
-            showGuides ? "bg-brand text-brand-foreground" : "bg-background hover:bg-secondary"
-          }`}
+          className={`px-3 py-2 border-2 border-primary text-sm font-bold transition-all ${showGuides ? "bg-brand text-brand-foreground" : "bg-background hover:bg-secondary"
+            }`}
         >
           Guides
         </button>
@@ -530,7 +615,7 @@ export const BrushCanvas = ({
 
       {/* Canvas Info */}
       <p className="text-xs text-muted-foreground text-center">
-        {activeTool === "eraser" || activeTool === "restore" 
+        {activeTool === "eraser" || activeTool === "restore"
           ? `${activeTool === "eraser" ? "Eraser" : "Restore"}: Click and drag to ${activeTool === "eraser" ? "reveal original background" : "restore transparent background"}`
           : "Drag to pan • Pinch to zoom • Use toolbar to touch up edges"
         }

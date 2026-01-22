@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Globe, Palette, ChevronDown, Maximize2 } from "lucide-react";
 import { useState } from "react";
 import type { CountryFormat } from "@/pages/Editor";
+import { countryRequirements } from "@/data/countries";
 
 interface ControlsPanelProps {
   selectedCountry: CountryFormat;
@@ -12,18 +13,20 @@ interface ControlsPanelProps {
 
 type FormatMode = "countries" | "custom";
 
-const countries: CountryFormat[] = [
-  { code: "US", name: "United States", dimensions: "2×2 inches", bgColor: "white" },
-  { code: "IN", name: "India", dimensions: "2×2 inches", bgColor: "white" },
-  { code: "UK", name: "United Kingdom", dimensions: "35×45 mm", bgColor: "grey" },
-  { code: "CA", name: "Canada", dimensions: "50×70 mm", bgColor: "white" },
-  { code: "AU", name: "Australia", dimensions: "35×45 mm", bgColor: "white" },
-  { code: "DE", name: "Germany", dimensions: "35×45 mm", bgColor: "grey" },
-  { code: "FR", name: "France", dimensions: "35×45 mm", bgColor: "grey" },
-  { code: "JP", name: "Japan", dimensions: "35×45 mm", bgColor: "white" },
-  { code: "CN", name: "China", dimensions: "33×48 mm", bgColor: "white" },
-  { code: "BR", name: "Brazil", dimensions: "50×70 mm", bgColor: "white" },
-];
+const countries: CountryFormat[] = countryRequirements.map(c => {
+  // Map background color string to our union type if possible
+  let initialBg: "white" | "grey" | "blue" = "white";
+  const bgLower = c.bgColor.toLowerCase();
+  if (bgLower.includes("grey") || bgLower.includes("gray")) initialBg = "grey";
+  if (bgLower.includes("blue")) initialBg = "blue";
+
+  return {
+    code: c.code,
+    name: c.name,
+    dimensions: c.dimensions,
+    bgColor: initialBg
+  };
+});
 
 // Custom photo sizes for print shops
 const customSizes: CountryFormat[] = [
@@ -65,22 +68,20 @@ export const ControlsPanel = ({
         <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => setFormatMode("countries")}
-            className={`p-3 border-3 transition-all text-center ${
-              formatMode === "countries"
+            className={`p-3 border-3 transition-all text-center ${formatMode === "countries"
                 ? "border-brand bg-brand/10 shadow-brutal"
                 : "border-primary hover:shadow-brutal-hover"
-            }`}
+              }`}
           >
             <Globe className="w-5 h-5 mx-auto mb-1" />
             <span className="text-xs font-bold">Countries</span>
           </button>
           <button
             onClick={() => setFormatMode("custom")}
-            className={`p-3 border-3 transition-all text-center ${
-              formatMode === "custom"
+            className={`p-3 border-3 transition-all text-center ${formatMode === "custom"
                 ? "border-brand bg-brand/10 shadow-brutal"
                 : "border-primary hover:shadow-brutal-hover"
-            }`}
+              }`}
           >
             <Maximize2 className="w-5 h-5 mx-auto mb-1" />
             <span className="text-xs font-bold">Custom Sizes</span>
@@ -130,9 +131,8 @@ export const ControlsPanel = ({
                     setBgColor(item.bgColor);
                     setIsCountryOpen(false);
                   }}
-                  className={`w-full p-3 flex items-center gap-2 hover:bg-secondary transition-colors text-left ${
-                    selectedCountry.code === item.code ? "bg-highlight/20" : ""
-                  }`}
+                  className={`w-full p-3 flex items-center gap-2 hover:bg-secondary transition-colors text-left ${selectedCountry.code === item.code ? "bg-highlight/20" : ""
+                    }`}
                 >
                   {formatMode === "countries" ? (
                     <span className="text-xl">{getFlag(item.code)}</span>
@@ -163,11 +163,10 @@ export const ControlsPanel = ({
             <button
               key={color.id}
               onClick={() => setBgColor(color.id)}
-              className={`p-3 border-3 transition-all ${
-                bgColor === color.id
+              className={`p-3 border-3 transition-all ${bgColor === color.id
                   ? "border-brand shadow-brutal"
                   : "border-primary hover:shadow-brutal-hover"
-              }`}
+                }`}
             >
               <div
                 className={`w-full h-8 mb-1 ${color.border ? "border border-secondary" : ""}`}
@@ -197,17 +196,6 @@ export const ControlsPanel = ({
 
 // Helper function to get country flag emoji
 function getFlag(countryCode: string): string {
-  const flags: Record<string, string> = {
-    US: "🇺🇸",
-    IN: "🇮🇳",
-    UK: "🇬🇧",
-    CA: "🇨🇦",
-    AU: "🇦🇺",
-    DE: "🇩🇪",
-    FR: "🇫🇷",
-    JP: "🇯🇵",
-    CN: "🇨🇳",
-    BR: "🇧🇷",
-  };
-  return flags[countryCode] || "🏳️";
+  const country = countryRequirements.find(c => c.code === countryCode);
+  return country?.flag || "🏳️";
 }

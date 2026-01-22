@@ -2,7 +2,7 @@ import Header from "@/components/landing/Header";
 import Hero from "@/components/landing/Hero";
 import { CountryMarquee } from "@/components/ui/country-marquee";
 import HowItWorks from "@/components/landing/HowItWorks";
-import UploadSection from "@/components/landing/UploadSection";
+import { GlobalDocumentExplorer } from "@/components/landing/GlobalDocumentExplorer";
 import Pricing from "@/components/landing/Pricing";
 import Footer from "@/components/landing/Footer";
 import InstallBanner from "@/components/landing/InstallBanner";
@@ -19,9 +19,7 @@ const Index = () => {
         <section id="how-it-works">
           <HowItWorks />
         </section>
-        <section id="upload">
-          <UploadSection />
-        </section>
+        <GlobalDocumentExplorer />
         <section id="pricing">
           <Pricing />
         </section>

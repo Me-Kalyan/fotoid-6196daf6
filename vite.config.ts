@@ -77,6 +77,8 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
+        // Increase max file size to allow ONNX models
+        maximumFileSizeToCacheInBytes: 50 * 1024 * 1024, // 50MB
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -122,6 +124,67 @@ export default defineConfig(({ mode }) => ({
             },
           },
           {
+            // Cache ONNX AI models for offline processing
+            urlPattern: /\.onnx$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "ai-models-cache",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 90, // 90 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+              rangeRequests: true,
+            },
+          },
+          {
+            // Cache WASM files for WebGPU/WebNN inference
+            urlPattern: /\.wasm$/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "wasm-cache",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 90, // 90 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Cache jsDelivr CDN resources (used by @imgly/background-removal)
+            urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "cdn-cache",
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
+            // Cache unpkg CDN resources
+            urlPattern: /^https:\/\/unpkg\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "unpkg-cache",
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+          {
             // Cache API responses with network-first strategy
             urlPattern: /\/api\/.*/i,
             handler: "NetworkFirst",
@@ -148,8 +211,22 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     exclude: ["@imgly/background-removal"],
+    include: ["onnxruntime-web"],
   },
   build: {
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        // Ensure WASM files are handled properly
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name?.endsWith('.wasm')) {
+            return 'assets/[name][extname]';
+          }
+          return 'assets/[name]-[hash][extname]';
+        },
+      },
+    },
   },
+  // Allow loading WASM files
+  assetsInclude: ['**/*.wasm'],
 }));

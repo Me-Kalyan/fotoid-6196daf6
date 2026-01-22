@@ -30,9 +30,9 @@ export const EditorHeader = ({ editorState, onStartOver }: EditorHeaderProps) =>
               <span className="font-heading font-bold text-lg hidden sm:inline">Back</span>
             </motion.div>
           </Link>
-          
+
           <div className="h-6 w-px bg-primary hidden sm:block" />
-          
+
           <div className="flex items-center gap-2">
             <Camera className="w-6 h-6 text-brand" />
             <span className="font-heading font-bold text-xl">FotoID</span>

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 
-export type ProcessingStep = 
+export type ProcessingStep =
   | "idle"
   | "loading-models"
   | "detecting-face"
@@ -62,26 +62,26 @@ export const useImageProcessing = () => {
     try {
       // Step 1: Load and validate image
       updateProgress("loading-models", 10, "Loading AI models...");
-      
+
       const originalImageUrl = await readFileAsDataURL(file);
       const img = await loadImage(originalImageUrl);
-      
+
       // Step 2: Detect face landmarks
       updateProgress("detecting-face", 30, "Detecting face landmarks...");
-      
+
       const faceLandmarks = await detectFaceLandmarks(img);
-      
+
       if (!faceLandmarks) {
         throw new Error("No face detected in the image. Please upload a photo with a clear, visible face.");
       }
 
       // Step 3: Remove background (dynamic import to avoid module loading issues)
       updateProgress("removing-background", 50, "Removing background...");
-      
+
       const { removeBackground } = await import("@imgly/background-removal");
-      
+
       const blob = await removeBackground(file, {
-        model: "isnet_quint8",
+        model: "isnet",  // Use full-precision model for better quality (fewer artifacts)
         progress: (key, current, total) => {
           const bgProgress = 50 + (current / total) * 30;
           updateProgress("removing-background", bgProgress, `Removing background... ${Math.round((current / total) * 100)}%`);
@@ -92,10 +92,10 @@ export const useImageProcessing = () => {
 
       // Step 4: Apply crop for passport dimensions
       updateProgress("applying-crop", 90, "Applying passport crop...");
-      
+
       // For now, we'll return the processed image without additional cropping
       // The cropping will be done in the canvas component based on country specs
-      
+
       updateProgress("complete", 100, "Processing complete!");
 
       const result: ProcessedImage = {
@@ -174,13 +174,13 @@ async function detectFaceLandmarks(img: HTMLImageElement): Promise<FaceLandmarks
   // Simple heuristic face detection based on image dimensions
   // This is a placeholder - MediaPipe integration will provide actual landmarks
   // For now, we estimate face position assuming a centered portrait
-  
+
   const centerX = img.width / 2;
   const centerY = img.height * 0.4; // Face usually in upper portion
-  
+
   const faceWidth = img.width * 0.4;
   const faceHeight = img.height * 0.5;
-  
+
   const eyeY = centerY - faceHeight * 0.1;
   const eyeSpacing = faceWidth * 0.25;
 
@@ -204,24 +204,24 @@ async function detectFaceLandmarks(img: HTMLImageElement): Promise<FaceLandmarks
   // Basic validation: check if image appears to contain a face-like region
   // In production, MediaPipe would provide this
   const imageData = ctx.getImageData(
-    Math.floor(centerX - 50), 
-    Math.floor(centerY - 50), 
-    100, 
+    Math.floor(centerX - 50),
+    Math.floor(centerY - 50),
+    100,
     100
   );
-  
+
   // Simple skin tone detection heuristic
   let skinTonePixels = 0;
   for (let i = 0; i < imageData.data.length; i += 4) {
     const r = imageData.data[i];
     const g = imageData.data[i + 1];
     const b = imageData.data[i + 2];
-    
+
     // Very rough skin tone detection
-    if (r > 95 && g > 40 && b > 20 && 
-        r > g && r > b && 
-        Math.abs(r - g) > 15 && 
-        r - b > 15) {
+    if (r > 95 && g > 40 && b > 20 &&
+      r > g && r > b &&
+      Math.abs(r - g) > 15 &&
+      r - b > 15) {
       skinTonePixels++;
     }
   }

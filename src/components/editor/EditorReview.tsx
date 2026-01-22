@@ -26,8 +26,8 @@ export const EditorReview = ({
   setBgColor,
   onProceedToDownload,
 }: EditorReviewProps) => {
-  const { 
-    processedImage, 
+  const {
+    processedImage,
     compliance,
     activeTool,
     brushSize,
@@ -36,34 +36,21 @@ export const EditorReview = ({
     pushHistory,
     undo,
     redo,
+    undoImageData,
+    redoImageData,
+    clearUndoRedoData,
   } = useImageProcessingContext();
 
-  // State to trigger undo/redo in canvas
-  const [undoImageData, setUndoImageData] = useState<ImageData | null>(null);
-  const [redoImageData, setRedoImageData] = useState<ImageData | null>(null);
   const [showComparison, setShowComparison] = useState(false);
 
   const handlePushHistory = useCallback((imageData: ImageData) => {
     pushHistory(imageData);
-    setUndoImageData(null);
-    setRedoImageData(null);
   }, [pushHistory]);
-
-  // We need to subscribe to undo/redo from context
-  const handleUndo = useCallback(() => {
-    const data = undo();
-    if (data) setUndoImageData(data);
-  }, [undo]);
-
-  const handleRedo = useCallback(() => {
-    const data = redo();
-    if (data) setRedoImageData(data);
-  }, [redo]);
 
   // Keyboard shortcuts for undo/redo and zoom
   useKeyboardShortcuts({
-    onUndo: handleUndo,
-    onRedo: handleRedo,
+    onUndo: undo,
+    onRedo: redo,
     onZoomIn: () => setZoom(Math.min(200, zoom + 10)),
     onZoomOut: () => setZoom(Math.max(50, zoom - 10)),
     onResetView: () => setZoom(100),
@@ -101,11 +88,10 @@ export const EditorReview = ({
           <div className="flex items-center gap-2 bg-background border-2 border-primary p-1">
             <motion.button
               onClick={() => setShowComparison(false)}
-              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-bold transition-all ${
-                !showComparison
-                  ? "bg-brand text-brand-foreground"
-                  : "hover:bg-secondary"
-              }`}
+              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-bold transition-all ${!showComparison
+                ? "bg-brand text-brand-foreground"
+                : "hover:bg-secondary"
+                }`}
               whileTap={{ scale: 0.95 }}
             >
               <Paintbrush className="w-4 h-4" />
@@ -113,11 +99,10 @@ export const EditorReview = ({
             </motion.button>
             <motion.button
               onClick={() => setShowComparison(true)}
-              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-bold transition-all ${
-                showComparison
-                  ? "bg-brand text-brand-foreground"
-                  : "hover:bg-secondary"
-              }`}
+              className={`flex items-center gap-2 px-3 py-1.5 text-sm font-bold transition-all ${showComparison
+                ? "bg-brand text-brand-foreground"
+                : "hover:bg-secondary"
+                }`}
               whileTap={{ scale: 0.95 }}
             >
               <SplitSquareHorizontal className="w-4 h-4" />
@@ -126,14 +111,25 @@ export const EditorReview = ({
           </div>
 
           {showComparison && processedImage?.originalImage && processedImage?.processedImage ? (
-            <BeforeAfterSlider
-              beforeImage={processedImage.originalImage}
-              afterImage={processedImage.processedImage}
-              className="w-full max-w-md aspect-[3/4]"
-            />
+            <div
+              className="w-full max-w-md overflow-hidden"
+              style={{
+                aspectRatio: (() => {
+                  const dims = selectedCountry.dimensions.match(/(\d+)×(\d+)/);
+                  if (dims) return `${dims[1]}/${dims[2]}`;
+                  return "3/4";
+                })()
+              }}
+            >
+              <BeforeAfterSlider
+                beforeImage={processedImage.originalImage}
+                afterImage={processedImage.processedImage}
+                className="w-full h-full"
+              />
+            </div>
           ) : (
-            <BrushCanvas 
-              bgColor={bgColor} 
+            <BrushCanvas
+              bgColor={bgColor}
               processedImageUrl={processedImage?.processedImage}
               originalImageUrl={processedImage?.originalImage}
               faceLandmarks={processedImage?.faceLandmarks}
@@ -144,6 +140,7 @@ export const EditorReview = ({
               onPushHistory={handlePushHistory}
               undoImageData={undoImageData}
               redoImageData={redoImageData}
+              selectedCountry={selectedCountry}
             />
           )}
         </motion.main>
@@ -155,7 +152,7 @@ export const EditorReview = ({
           className="w-full lg:w-80 border-t-3 lg:border-t-0 lg:border-l-3 border-primary bg-background p-4 lg:p-6"
         >
           <CompliancePanel compliance={compliance} />
-          
+
           {/* Download CTA */}
           <div className="mt-6 pt-6 border-t-2 border-primary">
             <NeoButton

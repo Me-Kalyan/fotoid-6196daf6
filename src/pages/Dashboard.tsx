@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { 
-  Crown, 
-  Download, 
-  Calendar, 
-  Clock, 
-  Globe, 
+import {
+  Crown,
+  Download,
+  Calendar,
+  Clock,
+  Globe,
   Zap,
   ArrowLeft,
   Loader2,
@@ -52,13 +52,7 @@ const Dashboard = () => {
     }
   }, [user, authLoading, navigate]);
 
-  useEffect(() => {
-    if (user) {
-      fetchData();
-    }
-  }, [user]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
 
     setLoading(true);
@@ -89,20 +83,26 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user, fetchData]);
 
   // Calculate credits
   const freeDownloadsUsed = downloads.filter(d => !d.is_paid && d.photo_type !== "paid_credit").length;
   const paidCredits = downloads.filter(d => d.photo_type === "paid_credit").length;
   const actualDownloads = downloads.filter(d => d.photo_type !== "paid_credit");
   const freeRemaining = Math.max(0, FREE_DOWNLOAD_LIMIT - freeDownloadsUsed);
-  
-  const isPro = profile?.is_pro && profile?.pro_expires_at 
-    ? new Date(profile.pro_expires_at) > new Date() 
+
+  const isPro = profile?.is_pro && profile?.pro_expires_at
+    ? new Date(profile.pro_expires_at) > new Date()
     : false;
 
-  const proExpiresAt = profile?.pro_expires_at 
-    ? new Date(profile.pro_expires_at) 
+  const proExpiresAt = profile?.pro_expires_at
+    ? new Date(profile.pro_expires_at)
     : null;
 
   if (authLoading || loading) {
@@ -118,8 +118,8 @@ const Dashboard = () => {
       {/* Header */}
       <header className="border-b-2 border-foreground bg-background px-4 py-4">
         <div className="container mx-auto max-w-6xl flex items-center justify-between">
-          <NeoButton 
-            variant="outline" 
+          <NeoButton
+            variant="outline"
             size="sm"
             onClick={() => navigate("/")}
           >
@@ -170,9 +170,9 @@ const Dashboard = () => {
                     <p className="text-sm text-muted-foreground">
                       Expires: {proExpiresAt ? format(proExpiresAt, "MMM d, yyyy") : "N/A"}
                     </p>
-                    <NeoButton 
-                      variant="outline" 
-                      size="sm" 
+                    <NeoButton
+                      variant="outline"
+                      size="sm"
                       className="w-full"
                       onClick={() => navigate("/subscription")}
                     >
@@ -185,8 +185,8 @@ const Dashboard = () => {
                     <p className="text-sm text-muted-foreground">
                       Upgrade for unlimited downloads
                     </p>
-                    <NeoButton 
-                      size="sm" 
+                    <NeoButton
+                      size="sm"
                       className="w-full"
                       onClick={() => initiatePayment("pro")}
                       disabled={paymentLoading}
@@ -239,9 +239,9 @@ const Dashboard = () => {
                       </p>
                     )}
                     {freeRemaining === 0 && paidCredits === 0 && (
-                      <NeoButton 
-                        variant="outline" 
-                        size="sm" 
+                      <NeoButton
+                        variant="outline"
+                        size="sm"
                         className="w-full"
                         onClick={() => initiatePayment("single")}
                         disabled={paymentLoading}
@@ -302,7 +302,7 @@ const Dashboard = () => {
                 <div className="text-center py-8">
                   <Download className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
                   <p className="text-muted-foreground">No downloads yet</p>
-                  <NeoButton 
+                  <NeoButton
                     className="mt-4"
                     onClick={() => navigate("/")}
                   >
@@ -312,7 +312,7 @@ const Dashboard = () => {
               ) : (
                 <div className="space-y-3">
                   {actualDownloads.slice(0, 10).map((download) => (
-                    <div 
+                    <div
                       key={download.id}
                       className="flex items-center justify-between p-3 border-2 border-foreground rounded-lg bg-muted/30"
                     >

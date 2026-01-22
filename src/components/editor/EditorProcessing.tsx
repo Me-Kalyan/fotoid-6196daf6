@@ -3,22 +3,22 @@ import { Cpu, Wand2, ScanFace, Sparkles, Crop } from "lucide-react";
 import { useImageProcessingContext } from "@/contexts/ImageProcessingContext";
 import type { ProcessingStep } from "@/hooks/useImageProcessing";
 import { PhotoSkeleton, PanelSkeleton } from "@/components/ui/loading-skeleton";
+import { ProcessingAnimation } from "./ProcessingAnimation";
 
 const stepConfig: Record<ProcessingStep, { icon: React.ElementType; label: string; sublabel: string }> = {
   idle: { icon: Cpu, label: "Ready", sublabel: "Waiting for image" },
   "loading-models": { icon: Cpu, label: "Initializing AI models...", sublabel: "Loading neural networks (~10MB)" },
-  "detecting-face": { icon: ScanFace, label: "Detecting face landmarks...", sublabel: "Finding 468 facial points" },
-  "removing-background": { icon: Wand2, label: "Removing background...", sublabel: "Pixel-perfect extraction" },
-  "applying-crop": { icon: Crop, label: "Applying passport crop...", sublabel: "Adjusting size and position" },
+  "detecting-face": { icon: ScanFace, label: "Detecting face landmarks...", sublabel: "Finding facial features" },
+  "removing-background": { icon: Wand2, label: "Removing background...", sublabel: "AI-powered pixel-perfect extraction" },
+  "applying-crop": { icon: Crop, label: "Applying passport crop...", sublabel: "Adjusting to passport specifications" },
   complete: { icon: Sparkles, label: "Processing complete!", sublabel: "Your photo is ready" },
   error: { icon: Cpu, label: "Error occurred", sublabel: "Something went wrong" },
 };
 
 export const EditorProcessing = () => {
   const { progress } = useImageProcessingContext();
-  
+
   const currentStep = stepConfig[progress.step] || stepConfig.idle;
-  const CurrentIcon = currentStep.icon;
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row gap-6 p-4 lg:p-8">
@@ -40,25 +40,12 @@ export const EditorProcessing = () => {
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
           >
-            {/* Animated Icon */}
-            <motion.div
-              className="w-24 h-24 mx-auto mb-6 bg-brand border-3 border-primary flex items-center justify-center"
-              animate={{ 
-                rotate: [0, 5, -5, 0],
-                scale: [1, 1.02, 0.98, 1],
-              }}
-              transition={{ 
-                duration: 0.5, 
-                repeat: Infinity,
-                repeatType: "loop",
-              }}
-            >
-              <CurrentIcon className="w-12 h-12 text-brand-foreground" />
-            </motion.div>
+            {/* Animated SVG Illustration */}
+            <ProcessingAnimation step={progress.step} progress={progress.progress} />
 
             {/* Main Text */}
             <motion.h2
-              className="text-2xl md:text-3xl font-heading font-bold mb-2"
+              className="text-2xl md:text-3xl font-heading font-bold mb-2 mt-6"
               key={progress.step}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -102,7 +89,7 @@ export const EditorProcessing = () => {
               animate={{ opacity: [0.5, 1, 0.5] }}
               transition={{ duration: 1.5, repeat: Infinity }}
             >
-              &gt; PROCESSING... 
+              &gt; PROCESSING...
               <motion.span
                 animate={{ opacity: [0, 1] }}
                 transition={{ duration: 0.5, repeat: Infinity }}
@@ -123,12 +110,12 @@ export const EditorProcessing = () => {
         className="hidden lg:block w-80 p-6"
       >
         <PhotoSkeleton className="max-w-[200px] mx-auto" />
-        
+
         {/* Checklist skeleton */}
         <div className="mt-6 space-y-3">
           <div className="text-sm font-bold text-muted-foreground/50">Quality Checks</div>
           {[1, 2, 3, 4].map((i) => (
-            <motion.div 
+            <motion.div
               key={i}
               className="flex items-center gap-2 p-2 border-2 border-primary/20 bg-muted/30"
               initial={{ opacity: 0 }}

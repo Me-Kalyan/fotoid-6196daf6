@@ -25,14 +25,14 @@ export const usePWAInstall = () => {
     // Check if already installed
     const checkInstalled = () => {
       const isStandalone = window.matchMedia("(display-mode: standalone)").matches;
-      const isIOSStandalone = (navigator as any).standalone === true;
+      const isIOSStandalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
       setIsInstalled(isStandalone || isIOSStandalone);
     };
 
     // Check if iOS
     const checkIOS = () => {
       const ua = navigator.userAgent;
-      const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+      const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !(window as Window & { MSStream?: unknown }).MSStream;
       setIsIOS(isIOSDevice);
     };
 
@@ -68,7 +68,7 @@ export const usePWAInstall = () => {
     try {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
-      
+
       if (outcome === "accepted") {
         setDeferredPrompt(null);
         setIsInstallable(false);
