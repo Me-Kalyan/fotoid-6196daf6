@@ -1,10 +1,12 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, Camera, ImagePlus, AlertTriangle, Smartphone } from "lucide-react";
+import { Upload, Camera, ImagePlus, Smartphone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { UploadZone } from "@/components/ui/upload-zone";
 import { NeoCard } from "@/components/ui/neo-card";
 import { NeoButton } from "@/components/ui/neo-button";
 import { CameraCapture } from "./CameraCapture";
+import { ImageQualityPreview } from "./ImageQualityPreview";
+import { ProcessingErrorFeedback, parseErrorType } from "./ProcessingErrorFeedback";
 
 interface EditorUploadProps {
   onFileSelect: (file: File) => void;
@@ -15,6 +17,7 @@ export const EditorUpload = ({ onFileSelect, error }: EditorUploadProps) => {
   const [showCamera, setShowCamera] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [hasCamera, setHasCamera] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   // Detect mobile device and camera availability
   useEffect(() => {
@@ -38,9 +41,26 @@ export const EditorUpload = ({ onFileSelect, error }: EditorUploadProps) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  const handleFileSelection = (file: File) => {
+    // Show quality preview before processing
+    setPendingFile(file);
+  };
+
+  const handleQualityConfirm = () => {
+    if (pendingFile) {
+      onFileSelect(pendingFile);
+      setPendingFile(null);
+    }
+  };
+
+  const handleQualityCancel = () => {
+    setPendingFile(null);
+  };
+
   const handleCameraCapture = (file: File) => {
     setShowCamera(false);
-    onFileSelect(file);
+    // Show quality preview for camera captures too
+    setPendingFile(file);
   };
 
   return (
@@ -64,18 +84,17 @@ export const EditorUpload = ({ onFileSelect, error }: EditorUploadProps) => {
             </p>
           </motion.div>
 
-          {/* Error Message */}
+          {/* Error Message - Enhanced feedback */}
           {error && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 border-3 border-destructive bg-destructive/10 flex items-start gap-3"
+              className="mb-6"
             >
-              <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold text-destructive">Processing Failed</p>
-                <p className="text-sm text-muted-foreground">{error}</p>
-              </div>
+              <ProcessingErrorFeedback
+                errorType={parseErrorType(error)}
+                errorMessage={error}
+              />
             </motion.div>
           )}
 
@@ -103,7 +122,7 @@ export const EditorUpload = ({ onFileSelect, error }: EditorUploadProps) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <UploadZone onFileSelect={onFileSelect} />
+            <UploadZone onFileSelect={handleFileSelection} />
           </motion.div>
 
           {/* Feature cards - larger touch targets on mobile */}
@@ -156,6 +175,17 @@ export const EditorUpload = ({ onFileSelect, error }: EditorUploadProps) => {
           </motion.div>
         </div>
       </div>
+
+      {/* Image Quality Preview Modal */}
+      <AnimatePresence>
+        {pendingFile && (
+          <ImageQualityPreview
+            file={pendingFile}
+            onConfirm={handleQualityConfirm}
+            onCancel={handleQualityCancel}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Camera Capture Modal */}
       <AnimatePresence>
