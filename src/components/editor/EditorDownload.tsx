@@ -223,29 +223,15 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
           ctx.fillStyle = bgColorHex[bgColor];
           ctx.fillRect(0, 0, targetWidthPx, targetHeightPx);
 
-          // Draw the processed image using cover fit (respects user's manual crop)
-          const imgRatio = img.width / img.height;
-          const targetRatio = targetWidthPx / targetHeightPx;
-          
-          let sourceX = 0;
-          let sourceY = 0;
-          let sourceWidth = img.width;
-          let sourceHeight = img.height;
-
-          if (imgRatio > targetRatio) {
-            // Image is wider - crop sides
-            sourceWidth = img.height * targetRatio;
-            sourceX = (img.width - sourceWidth) / 2;
-          } else {
-            // Image is taller - crop top/bottom
-            sourceHeight = img.width / targetRatio;
-            sourceY = (img.height - sourceHeight) / 2;
-          }
-
-          ctx.drawImage(
+          // Use the same face-aware crop as the preview canvas
+          const spec = getPassportSpec(formatId);
+          drawImageWithFaceCrop(
+            ctx,
             img,
-            sourceX, sourceY, sourceWidth, sourceHeight,
-            0, 0, targetWidthPx, targetHeightPx
+            processedImage.faceLandmarks,
+            targetWidthPx,
+            targetHeightPx,
+            spec
           );
 
           // Generate download
