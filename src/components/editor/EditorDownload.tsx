@@ -30,7 +30,7 @@ interface EditorDownloadProps {
   onBack: () => void;
 }
 
-type OutputFormat = "single" | "sheet-4x6" | "sheet-5x7" | "sheet-a4" | "sheet-letter";
+type OutputFormat = "single" | "sheet-3.5x5" | "sheet-4x6" | "sheet-5x7" | "sheet-6x8" | "sheet-8x10" | "sheet-8x12" | "sheet-postcard" | "sheet-a4" | "sheet-letter";
 type FileFormat = "jpg" | "png";
 type JpgQuality = 70 | 80 | 90 | 100;
 
@@ -52,25 +52,65 @@ const outputOptions: OutputOption[] = [
     photos: 1,
   },
   {
+    id: "sheet-3.5x5",
+    title: "3.5×5 Sheet",
+    description: "Compact print, 2 photos",
+    icon: Grid3X3,
+    photos: 2,
+    sheetSize: "3.5x5",
+  },
+  {
     id: "sheet-4x6",
     title: "4×6 Sheet",
-    description: "Drugstore printing",
+    description: "Standard photo print, 4 photos",
     icon: Grid3X3,
     photos: 4,
     sheetSize: "4x6",
   },
   {
+    id: "sheet-postcard",
+    title: "Postcard (4×6)",
+    description: "Postcard size, 4 photos",
+    icon: Grid3X3,
+    photos: 4,
+    sheetSize: "postcard",
+  },
+  {
     id: "sheet-5x7",
     title: "5×7 Sheet",
-    description: "6 photos, common size",
+    description: "Medium print, 6 photos",
     icon: Grid3X3,
     photos: 6,
     sheetSize: "5x7",
   },
   {
+    id: "sheet-6x8",
+    title: "6×8 Sheet",
+    description: "Large print, 6 photos",
+    icon: Grid3X3,
+    photos: 6,
+    sheetSize: "6x8",
+  },
+  {
+    id: "sheet-8x10",
+    title: "8×10 Sheet",
+    description: "Photo studio size, 12 photos",
+    icon: Printer,
+    photos: 12,
+    sheetSize: "8x10",
+  },
+  {
+    id: "sheet-8x12",
+    title: "8×12 Sheet",
+    description: "Large format, 15 photos",
+    icon: Printer,
+    photos: 15,
+    sheetSize: "8x12",
+  },
+  {
     id: "sheet-a4",
     title: "A4 Sheet",
-    description: "Full page, 8+ photos",
+    description: "International paper, 8+ photos",
     icon: Printer,
     photos: 8,
     sheetSize: "a4",
@@ -78,7 +118,7 @@ const outputOptions: OutputOption[] = [
   {
     id: "sheet-letter",
     title: "Letter Sheet",
-    description: "US Letter (8.5×11)",
+    description: "US Letter (8.5×11), 10 photos",
     icon: Printer,
     photos: 10,
     sheetSize: "letter",
@@ -285,11 +325,11 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
             className="mb-8"
           >
             <h2 className="font-heading font-bold text-lg mb-4">Output Format</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {outputOptions.map((option) => (
                 <motion.div
                   key={option.id}
-                  className={`relative p-4 border-3 cursor-pointer transition-all ${selectedOutput === option.id
+                  className={`relative p-3 border-3 cursor-pointer transition-all ${selectedOutput === option.id
                     ? "border-brand bg-brand/10 shadow-brutal"
                     : "border-primary hover:shadow-brutal-hover bg-card"
                     }`}
@@ -297,12 +337,12 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
                   whileTap={{ scale: 0.98 }}
                 >
                   <div className="flex flex-col items-center text-center">
-                    <div className={`w-12 h-12 mb-2 border-2 border-primary flex items-center justify-center ${selectedOutput === option.id ? "bg-brand text-brand-foreground" : "bg-secondary"
+                    <div className={`w-10 h-10 mb-2 border-2 border-primary flex items-center justify-center ${selectedOutput === option.id ? "bg-brand text-brand-foreground" : "bg-secondary"
                       }`}>
-                      <option.icon className="w-6 h-6" />
+                      <option.icon className="w-5 h-5" />
                     </div>
-                    <h3 className="font-heading font-bold text-sm">{option.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <h3 className="font-heading font-bold text-xs">{option.title}</h3>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
                       {option.description}
                     </p>
 
