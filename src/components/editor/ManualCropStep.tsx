@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Move, Check, ZoomIn, ZoomOut, RotateCcw, Loader2, Crop, User } from "lucide-react";
+import { Move, Check, ZoomIn, ZoomOut, RotateCcw, Loader2, Crop } from "lucide-react";
 import { NeoButton } from "@/components/ui/neo-button";
 import { NeoCard } from "@/components/ui/neo-card";
 import type { PhotoFormat } from "./ControlsPanel";
@@ -26,9 +26,11 @@ export const ManualCropStep = ({
   isProcessing = false,
 }: ManualCropStepProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
   
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
+  const [rotation, setRotation] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
@@ -40,29 +42,14 @@ export const ManualCropStep = ({
   const getAspectRatio = () => {
     const dims = selectedFormat.dimensions.match(/(\d+(?:\.\d+)?)\s*×\s*(\d+(?:\.\d+)?)/);
     if (dims) return parseFloat(dims[1]) / parseFloat(dims[2]);
-    return 35 / 45; // default passport ratio
+    return 0.78; // default passport ratio (35/45)
   };
 
   const aspectRatio = getAspectRatio();
   
-  // Fixed container dimensions
-  const containerWidth = 280;
-  const containerHeight = Math.round(containerWidth / aspectRatio);
-
-  // Calculate initial scale to cover container
-  const calculateInitialScale = useCallback((imgWidth: number, imgHeight: number) => {
-    const imgAspect = imgWidth / imgHeight;
-    const containerAspect = containerWidth / containerHeight;
-    
-    // Scale to cover (fill) the container
-    if (imgAspect > containerAspect) {
-      // Image is wider - scale based on height
-      return (containerHeight / imgHeight) * 1.05;
-    } else {
-      // Image is taller - scale based on width
-      return (containerWidth / imgWidth) * 1.05;
-    }
-  }, [containerHeight]);
+  // Fixed container width, height calculated from aspect ratio
+  const containerWidth = 320;
+  const containerHeight = containerWidth / aspectRatio;
 
   // Handle image load
   useEffect(() => {
@@ -70,11 +57,21 @@ export const ManualCropStep = ({
     img.onload = () => {
       setImageDimensions({ width: img.width, height: img.height });
       setImageLoaded(true);
-      setPosition({ x: 0, y: 0 });
-      setScale(calculateInitialScale(img.width, img.height));
+      
+      // Scale to cover the container
+      const imgAspect = img.width / img.height;
+      const containerAspect = containerWidth / containerHeight;
+      
+      if (imgAspect > containerAspect) {
+        // Image is wider - scale to match height
+        setScale(containerHeight / img.height * 1.1);
+      } else {
+        // Image is taller - scale to match width
+        setScale(containerWidth / img.width * 1.1);
+      }
     };
     img.src = imageUrl;
-  }, [imageUrl, calculateInitialScale]);
+  }, [imageUrl, containerHeight]);
 
   // Mouse handlers
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -130,12 +127,20 @@ export const ManualCropStep = ({
   }, []);
 
   // Controls
-  const handleZoomIn = () => setScale(prev => Math.min(prev * 1.15, 5));
-  const handleZoomOut = () => setScale(prev => Math.max(prev / 1.15, 0.2));
+  const handleZoomIn = () => setScale(prev => Math.min(prev * 1.15, 4));
+  const handleZoomOut = () => setScale(prev => Math.max(prev / 1.15, 0.3));
   const handleReset = () => {
     setPosition({ x: 0, y: 0 });
+    setRotation(0);
+    // Reset scale to cover
     if (imageDimensions.width > 0) {
-      setScale(calculateInitialScale(imageDimensions.width, imageDimensions.height));
+      const imgAspect = imageDimensions.width / imageDimensions.height;
+      const containerAspect = containerWidth / containerHeight;
+      if (imgAspect > containerAspect) {
+        setScale(containerHeight / imageDimensions.height * 1.1);
+      } else {
+        setScale(containerWidth / imageDimensions.width * 1.1);
+      }
     }
   };
 
@@ -186,18 +191,27 @@ export const ManualCropStep = ({
       ctx.fillStyle = bgColorHex[bgColor];
       ctx.fillRect(0, 0, outputWidth, outputHeight);
 
-      // Calculate the scale ratio from preview to output
+      // Calculate the transform from preview to output
       const scaleRatio = outputWidth / containerWidth;
       
-      // Calculate scaled image dimensions
-      const scaledImgWidth = img.width * scale * scaleRatio;
-      const scaledImgHeight = img.height * scale * scaleRatio;
+      // Apply transformations
+      ctx.save();
+      ctx.translate(outputWidth / 2, outputHeight / 2);
+      ctx.rotate((rotation * Math.PI) / 180);
+      ctx.translate(position.x * scaleRatio, position.y * scaleRatio);
       
-      // Position: center of canvas + user offset
-      const drawX = (outputWidth - scaledImgWidth) / 2 + (position.x * scaleRatio);
-      const drawY = (outputHeight - scaledImgHeight) / 2 + (position.y * scaleRatio);
+      // Draw the image centered and scaled
+      const imgScaledWidth = img.width * scale * scaleRatio;
+      const imgScaledHeight = img.height * scale * scaleRatio;
       
-      ctx.drawImage(img, drawX, drawY, scaledImgWidth, scaledImgHeight);
+      ctx.drawImage(
+        img,
+        -imgScaledWidth / 2,
+        -imgScaledHeight / 2,
+        imgScaledWidth,
+        imgScaledHeight
+      );
+      ctx.restore();
 
       // Convert to data URL
       const croppedImageUrl = canvas.toDataURL("image/png");
@@ -207,18 +221,14 @@ export const ManualCropStep = ({
     } finally {
       setIsApplying(false);
     }
-  }, [imageLoaded, imageUrl, position, scale, selectedFormat, bgColor, onConfirm, containerWidth]);
-
-  // Calculate image display dimensions
-  const displayWidth = imageDimensions.width * scale;
-  const displayHeight = imageDimensions.height * scale;
+  }, [imageLoaded, imageUrl, position, scale, rotation, selectedFormat, bgColor, onConfirm, containerWidth]);
 
   return (
-    <div className="flex-1 flex items-center justify-center p-4 md:p-8 bg-secondary/30">
+    <div className="flex-1 flex items-center justify-center p-4 md:p-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md"
+        className="w-full max-w-lg"
       >
         <NeoCard className="p-6 md:p-8">
           {/* Header */}
@@ -231,58 +241,34 @@ export const ManualCropStep = ({
               Position Your Photo
             </h2>
             <p className="text-muted-foreground text-sm md:text-base">
-              Drag to position your face within the frame. Use zoom to adjust size.
+              Drag to position your face within the frame. Use zoom to adjust the size.
             </p>
           </div>
 
-          {/* Crop Preview Area */}
-          <div className="relative mx-auto mb-6" style={{ width: containerWidth + 40, height: containerHeight + 40 }}>
-            {/* Outer checkered background (transparency indicator) */}
+          {/* Crop Preview */}
+          <div className="relative mx-auto mb-6">
+            {/* Checkered background to show transparency */}
             <div 
-              className="absolute inset-0 rounded-sm"
+              className="absolute inset-0"
               style={{
                 backgroundImage: `
-                  linear-gradient(45deg, hsl(var(--muted)) 25%, transparent 25%),
-                  linear-gradient(-45deg, hsl(var(--muted)) 25%, transparent 25%),
-                  linear-gradient(45deg, transparent 75%, hsl(var(--muted)) 75%),
-                  linear-gradient(-45deg, transparent 75%, hsl(var(--muted)) 75%)
+                  linear-gradient(45deg, #ccc 25%, transparent 25%),
+                  linear-gradient(-45deg, #ccc 25%, transparent 25%),
+                  linear-gradient(45deg, transparent 75%, #ccc 75%),
+                  linear-gradient(-45deg, transparent 75%, #ccc 75%)
                 `,
-                backgroundSize: "12px 12px",
-                backgroundPosition: "0 0, 0 6px, 6px -6px, -6px 0px",
+                backgroundSize: "16px 16px",
+                backgroundPosition: "0 0, 0 8px, 8px -8px, -8px 0px",
               }}
             />
             
-            {/* Image display area (behind crop frame, larger than frame) */}
-            <div 
-              className="absolute inset-0 overflow-hidden"
-              style={{ opacity: 0.4 }}
-            >
-              {imageLoaded && (
-                <img
-                  src={imageUrl}
-                  alt="Background preview"
-                  className="absolute pointer-events-none select-none"
-                  style={{
-                    width: displayWidth,
-                    height: displayHeight,
-                    left: `calc(50% + ${position.x}px)`,
-                    top: `calc(50% + ${position.y}px)`,
-                    transform: "translate(-50%, -50%)",
-                  }}
-                  draggable={false}
-                />
-              )}
-            </div>
-
-            {/* Crop frame container */}
+            {/* Image container */}
             <div
               ref={containerRef}
-              className="absolute border-3 border-brand overflow-hidden cursor-move touch-none shadow-lg"
+              className="relative mx-auto border-3 border-brand overflow-hidden cursor-move touch-none"
               style={{ 
                 width: containerWidth, 
                 height: containerHeight,
-                left: 20,
-                top: 20,
                 backgroundColor: bgColorHex[bgColor],
               }}
               onMouseDown={handleMouseDown}
@@ -293,74 +279,48 @@ export const ManualCropStep = ({
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
             >
-              {/* Image inside crop frame */}
+              {/* Image */}
               {imageLoaded && (
                 <img
+                  ref={imageRef}
                   src={imageUrl}
                   alt="Crop preview"
                   className="absolute pointer-events-none select-none"
                   style={{
-                    width: displayWidth,
-                    height: displayHeight,
-                    left: `calc(50% + ${position.x}px)`,
-                    top: `calc(50% + ${position.y}px)`,
-                    transform: "translate(-50%, -50%)",
+                    transform: `translate(${position.x}px, ${position.y}px) scale(${scale}) rotate(${rotation}deg)`,
+                    transformOrigin: "center center",
+                    left: "50%",
+                    top: "50%",
+                    marginLeft: "-50%",
+                    marginTop: "-50%",
                   }}
                   draggable={false}
                 />
               )}
 
-              {/* Face guideline overlay */}
+              {/* Crop guide overlay */}
               <div className="absolute inset-0 pointer-events-none">
-                {/* Face oval guideline */}
-                <div 
-                  className="absolute left-1/2 -translate-x-1/2 border-2 border-dashed border-brand/40 rounded-full"
-                  style={{
-                    width: containerWidth * 0.55,
-                    height: containerHeight * 0.65,
-                    top: containerHeight * 0.08,
-                  }}
-                />
+                {/* Corner brackets */}
+                <div className="absolute top-2 left-2 w-6 h-6 border-l-2 border-t-2 border-brand" />
+                <div className="absolute top-2 right-2 w-6 h-6 border-r-2 border-t-2 border-brand" />
+                <div className="absolute bottom-2 left-2 w-6 h-6 border-l-2 border-b-2 border-brand" />
+                <div className="absolute bottom-2 right-2 w-6 h-6 border-r-2 border-b-2 border-brand" />
                 
-                {/* Eye line guide */}
-                <div 
-                  className="absolute left-1/4 right-1/4 h-px bg-brand/30"
-                  style={{ top: containerHeight * 0.35 }}
-                />
-                
-                {/* Center vertical guide */}
-                <div 
-                  className="absolute top-1/4 bottom-1/3 w-px bg-brand/20 left-1/2 -translate-x-1/2"
-                />
+                {/* Center crosshair */}
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-px bg-brand/50" />
+                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-px bg-brand/50" />
               </div>
+
+              {/* Drag indicator */}
+              <motion.div 
+                className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-background/95 border-2 border-primary text-xs font-bold"
+                animate={{ y: [0, -3, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                <Move className="w-3.5 h-3.5" />
+                <span>Drag to move</span>
+              </motion.div>
             </div>
-
-            {/* Corner brackets on crop frame */}
-            <div className="absolute pointer-events-none" style={{ left: 20, top: 20, width: containerWidth, height: containerHeight }}>
-              <div className="absolute -top-1 -left-1 w-5 h-5 border-l-3 border-t-3 border-brand" />
-              <div className="absolute -top-1 -right-1 w-5 h-5 border-r-3 border-t-3 border-brand" />
-              <div className="absolute -bottom-1 -left-1 w-5 h-5 border-l-3 border-b-3 border-brand" />
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 border-r-3 border-b-3 border-brand" />
-            </div>
-
-            {/* Drag indicator */}
-            <motion.div 
-              className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-background/95 border-2 border-primary text-xs font-bold shadow-brutal z-10"
-              style={{ bottom: -8 }}
-              animate={{ y: [0, -2, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              <Move className="w-3.5 h-3.5" />
-              <span>Drag to move</span>
-            </motion.div>
-          </div>
-
-          {/* Face position tip */}
-          <div className="flex items-center gap-2 p-3 bg-brand/5 border border-brand/20 mb-4 text-xs">
-            <User className="w-4 h-4 text-brand flex-shrink-0" />
-            <span className="text-muted-foreground">
-              Position your face within the oval guideline for best results
-            </span>
           </div>
 
           {/* Controls */}
