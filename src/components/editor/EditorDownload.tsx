@@ -359,6 +359,29 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
                 </motion.div>
               ))}
             </div>
+
+            {/* Selected Sheet Info */}
+            {selectedOutput !== "single" && selectedOption && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-4 p-3 bg-brand/10 border-2 border-brand"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Grid3X3 className="w-4 h-4 text-brand" />
+                    <span className="font-bold text-sm">{selectedOption.title}</span>
+                  </div>
+                  <div className="text-sm font-mono bg-background px-2 py-0.5 border border-primary">
+                    ~{selectedOption.photos} photos
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Photo size: {selectedFormat.dimensions} • Sheet will be tiled automatically
+                </p>
+              </motion.div>
+            )}
           </motion.div>
 
           {/* File Format Selection */}
@@ -604,12 +627,14 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
               </motion.div>
             ) : selectedOption?.sheetSize ? (
               <PrintSheetPreview
-                key={selectedOption.sheetSize}
+                key={`${selectedOption.sheetSize}-${selectedFormat.id}`}
                 photoUrl={processedImage.processedImage}
                 sheetSize={selectedOption.sheetSize}
                 bgColor={bgColorHex[bgColor]}
                 faceLandmarks={processedImage.faceLandmarks}
-                countryCode={selectedFormat.id}
+                formatId={selectedFormat.id}
+                photoWidthInches={photoDimensions.width}
+                photoHeightInches={photoDimensions.height}
               />
             ) : null}
           </div>

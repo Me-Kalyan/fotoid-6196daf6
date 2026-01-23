@@ -9,10 +9,12 @@ interface PrintSheetPreviewProps {
   sheetSize: SheetSize;
   bgColor: string;
   faceLandmarks?: FaceLandmarks | null;
-  countryCode?: string;
+  formatId?: string;
+  photoWidthInches?: number;
+  photoHeightInches?: number;
 }
 
-export const PrintSheetPreview = ({ photoUrl, sheetSize, bgColor, faceLandmarks, countryCode }: PrintSheetPreviewProps) => {
+export const PrintSheetPreview = ({ photoUrl, sheetSize, bgColor, faceLandmarks, formatId, photoWidthInches, photoHeightInches }: PrintSheetPreviewProps) => {
   const [preview, setPreview] = useState<GeneratedSheet | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +27,7 @@ export const PrintSheetPreview = ({ photoUrl, sheetSize, bgColor, faceLandmarks,
       setError(null);
 
       try {
-        const result = await generatePreview(photoUrl, sheetSize, bgColor, 300, faceLandmarks, countryCode);
+        const result = await generatePreview(photoUrl, sheetSize, bgColor, 300, faceLandmarks, formatId);
         setPreview(result);
       } catch (err) {
         console.error("Failed to generate preview:", err);
@@ -36,7 +38,7 @@ export const PrintSheetPreview = ({ photoUrl, sheetSize, bgColor, faceLandmarks,
     };
 
     generate();
-  }, [photoUrl, sheetSize, bgColor, faceLandmarks, countryCode]);
+  }, [photoUrl, sheetSize, bgColor, faceLandmarks, formatId]);
 
   if (error) {
     return (
@@ -63,7 +65,7 @@ export const PrintSheetPreview = ({ photoUrl, sheetSize, bgColor, faceLandmarks,
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="relative"
+      className="relative w-full"
     >
       <div className="border-3 border-primary shadow-brutal overflow-hidden bg-card">
         <img
@@ -74,8 +76,26 @@ export const PrintSheetPreview = ({ photoUrl, sheetSize, bgColor, faceLandmarks,
       </div>
 
       {/* Info badge */}
-      <div className="absolute -top-2 -right-2 bg-brand text-brand-foreground px-2 py-1 text-xs font-bold border-2 border-primary">
-        {preview.columns}×{preview.rows} = {preview.photoCount} photos
+      <motion.div 
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="absolute -top-3 -right-3 bg-brand text-brand-foreground px-3 py-1.5 text-sm font-bold border-3 border-primary shadow-brutal"
+      >
+        {preview.photoCount} photos
+      </motion.div>
+
+      {/* Grid info */}
+      <div className="mt-3 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 border border-primary bg-secondary" />
+          <span className="text-muted-foreground">
+            {preview.columns} × {preview.rows} grid
+          </span>
+        </div>
+        <span className="font-mono text-muted-foreground uppercase">
+          {sheetSize}
+        </span>
       </div>
     </motion.div>
   );
