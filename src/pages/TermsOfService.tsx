@@ -103,8 +103,8 @@ const TermsOfService = () => {
             <h2 className="font-heading text-2xl font-bold text-foreground">10. Contact</h2>
             <p className="mt-3">
               For questions about these Terms of Service, contact us at{" "}
-              <a href="mailto:support@fotoid.app" className="text-primary underline">
-                support@fotoid.app
+              <a href="mailto:fotoid@zohomail.in" className="text-primary underline">
+                fotoid@zohomail.in
               </a>
             </p>
           </section>
