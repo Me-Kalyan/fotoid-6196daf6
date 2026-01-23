@@ -62,8 +62,8 @@ const Footer = forwardRef<HTMLElement>((_, ref) => {
                 </button>
               </li>
               <li>
-                <button onClick={() => handleScrollLink("countries")} className="hover:text-primary-foreground hover:underline">
-                  Supported Countries
+                <button onClick={() => handleScrollLink("photo-sizes")} className="hover:text-primary-foreground hover:underline">
+                  Photo Sizes
                 </button>
               </li>
             </ul>

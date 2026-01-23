@@ -95,14 +95,14 @@ const Header = () => {
           </motion.button>
           <motion.button
             onClick={() => {
-              const element = document.getElementById("countries");
+              const element = document.getElementById("photo-sizes");
               element?.scrollIntoView({ behavior: "smooth" });
             }}
             className="relative px-4 py-2 font-heading text-sm font-bold text-foreground bg-background border-2 border-primary shadow-[3px_3px_0px_0px_hsl(var(--primary))] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all duration-150"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            Countries
+            Photo Sizes
           </motion.button>
         </motion.nav>
 
