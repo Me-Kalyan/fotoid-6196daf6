@@ -88,8 +88,8 @@ const PrivacyPolicy = () => {
             <h2 className="font-heading text-2xl font-bold text-foreground">8. Contact Us</h2>
             <p className="mt-3">
               If you have any questions about this Privacy Policy, please contact us at{" "}
-              <a href="mailto:support@fotoid.app" className="text-primary underline">
-                support@fotoid.app
+              <a href="mailto:fotoid@zohomail.in" className="text-primary underline">
+                fotoid@zohomail.in
               </a>
             </p>
           </section>

@@ -75,8 +75,8 @@ const RefundPolicy = () => {
               Filing a chargeback or payment dispute instead of contacting us will result in permanent 
               account termination. If you believe there's an issue with your payment, please contact us 
               first at{" "}
-              <a href="mailto:support@fotoid.app" className="text-primary underline">
-                support@fotoid.app
+              <a href="mailto:fotoid@zohomail.in" className="text-primary underline">
+                fotoid@zohomail.in
               </a>
             </p>
           </section>
@@ -85,8 +85,8 @@ const RefundPolicy = () => {
             <h2 className="font-heading text-2xl font-bold text-foreground">Contact Us</h2>
             <p className="mt-3">
               If you have questions about this policy or need assistance, please contact us at{" "}
-              <a href="mailto:support@fotoid.app" className="text-primary underline">
-                support@fotoid.app
+              <a href="mailto:fotoid@zohomail.in" className="text-primary underline">
+                fotoid@zohomail.in
               </a>
             </p>
           </section>
