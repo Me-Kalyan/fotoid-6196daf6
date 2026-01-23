@@ -2,19 +2,16 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { generatePreview, type SheetSize, type GeneratedSheet } from "@/utils/printSheetGenerator";
-import type { FaceLandmarks } from "@/hooks/useImageProcessing";
 
 interface PrintSheetPreviewProps {
   photoUrl: string;
   sheetSize: SheetSize;
   bgColor: string;
-  faceLandmarks?: FaceLandmarks | null;
-  formatId?: string;
   photoWidthInches?: number;
   photoHeightInches?: number;
 }
 
-export const PrintSheetPreview = ({ photoUrl, sheetSize, bgColor, faceLandmarks, formatId, photoWidthInches, photoHeightInches }: PrintSheetPreviewProps) => {
+export const PrintSheetPreview = ({ photoUrl, sheetSize, bgColor, photoWidthInches, photoHeightInches }: PrintSheetPreviewProps) => {
   const [preview, setPreview] = useState<GeneratedSheet | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,9 +28,7 @@ export const PrintSheetPreview = ({ photoUrl, sheetSize, bgColor, faceLandmarks,
           photoUrl, 
           sheetSize, 
           bgColor, 
-          300, 
-          faceLandmarks, 
-          formatId,
+          300,
           photoWidthInches,
           photoHeightInches
         );
@@ -47,7 +42,7 @@ export const PrintSheetPreview = ({ photoUrl, sheetSize, bgColor, faceLandmarks,
     };
 
     generate();
-  }, [photoUrl, sheetSize, bgColor, faceLandmarks, formatId, photoWidthInches, photoHeightInches]);
+  }, [photoUrl, sheetSize, bgColor, photoWidthInches, photoHeightInches]);
 
   if (error) {
     return (

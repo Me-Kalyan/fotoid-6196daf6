@@ -5,6 +5,7 @@ import { EditorProcessing } from "@/components/editor/EditorProcessing";
 import { EditorReview } from "@/components/editor/EditorReview";
 import { EditorDownload } from "@/components/editor/EditorDownload";
 import { EditorHeader } from "@/components/editor/EditorHeader";
+import { ManualCropStep } from "@/components/editor/ManualCropStep";
 import { AuthGate } from "@/components/editor/AuthGate";
 import { ImageProcessingProvider, useImageProcessingContext } from "@/contexts/ImageProcessingContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,7 +13,7 @@ import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
 import { photoSizes } from "@/data/photoSizes";
 import type { PhotoFormat } from "@/components/editor/ControlsPanel";
 
-export type EditorState = "upload" | "processing" | "review" | "download";
+export type EditorState = "upload" | "processing" | "crop" | "review" | "download";
 
 const EditorContent = () => {
   const [editorState, setEditorState] = useState<EditorState>("upload");
@@ -27,7 +28,7 @@ const EditorContent = () => {
   });
   const [bgColor, setBgColor] = useState<"white" | "grey">("white");
 
-  const { processImage, reset, error } = useImageProcessingContext();
+  const { processImage, reset, error, updateProcessedImageUrl, processedImage } = useImageProcessingContext();
 
   const handleFileSelect = useCallback(async (file: File) => {
     setEditorState("processing");
@@ -35,12 +36,16 @@ const EditorContent = () => {
     const result = await processImage(file);
 
     if (result) {
-      setEditorState("review");
+      setEditorState("crop");
     } else {
-      // If processing failed, go back to upload
       setEditorState("upload");
     }
   }, [processImage]);
+
+  const handleCropConfirm = useCallback((croppedImageUrl: string) => {
+    updateProcessedImageUrl(croppedImageUrl);
+    setEditorState("review");
+  }, [updateProcessedImageUrl]);
 
   const handleProceedToDownload = () => {
     setEditorState("download");
@@ -85,6 +90,23 @@ const EditorContent = () => {
               className="flex-1"
             >
               <EditorProcessing />
+            </motion.div>
+          )}
+
+          {editorState === "crop" && (
+            <motion.div
+              key="crop"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              className="flex-1"
+            >
+              <ManualCropStep
+                imageUrl={processedImage?.processedImage || ""}
+                selectedFormat={selectedFormat}
+                bgColor={bgColor}
+                onConfirm={handleCropConfirm}
+              />
             </motion.div>
           )}
 

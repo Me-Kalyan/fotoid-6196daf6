@@ -2,10 +2,8 @@
  * Print Sheet Generator
  * Creates tiled grids of passport photos for printing at standard photo sizes
  */
-import { drawImageWithFaceCrop, getPassportSpec } from "@/hooks/useFaceCrop";
-import type { FaceLandmarks } from "@/hooks/useImageProcessing";
 
-export type SheetSize = "4x6" | "5x7" | "3.5x5" | "6x8" | "8x10" | "8x12" | "a4" | "letter" | "postcard";
+export type SheetSize = "4x6" | "5x7" | "3.5x5" | "6x4" | "6x8" | "8x10" | "8x12" | "a4" | "letter";
 export type FileFormat = "jpg" | "png";
 
 export interface SheetConfig {
@@ -42,6 +40,15 @@ const SHEET_CONFIGS: Record<SheetSize, SheetConfig> = {
     paddingInches: 0.1,
     marginInches: 0.1,
   },
+  "6x4": {
+    widthInches: 6,
+    heightInches: 4,
+    dpi: 300,
+    photoWidthInches: 2,
+    photoHeightInches: 2,
+    paddingInches: 0.08,
+    marginInches: 0.08,
+  },
   "5x7": {
     widthInches: 7,
     heightInches: 5,
@@ -77,15 +84,6 @@ const SHEET_CONFIGS: Record<SheetSize, SheetConfig> = {
     photoHeightInches: 2,
     paddingInches: 0.15,
     marginInches: 0.2,
-  },
-  "postcard": {
-    widthInches: 6,
-    heightInches: 4,
-    dpi: 300,
-    photoWidthInches: 2,
-    photoHeightInches: 2,
-    paddingInches: 0.1,
-    marginInches: 0.1,
   },
   "a4": {
     widthInches: 8.27, // A4 width
@@ -164,9 +162,7 @@ export async function generatePrintSheet(
   bgColor: string = "#FFFFFF",
   customDpi?: number,
   photoWidthInches?: number,
-  photoHeightInches?: number,
-  faceLandmarks?: FaceLandmarks | null,
-  countryCode?: string
+  photoHeightInches?: number
 ): Promise<GeneratedSheet> {
   const dpi = customDpi || SHEET_CONFIGS[sheetSize].dpi;
   const baseConfig = SHEET_CONFIGS[sheetSize];
@@ -209,16 +205,14 @@ export async function generatePrintSheet(
   const startX = (sheetWidthPx - gridWidth) / 2;
   const startY = (sheetHeightPx - gridHeight) / 2;
 
-  // Draw the photos in a grid
-  const spec = countryCode ? getPassportSpec(countryCode) : undefined;
-
+  // Draw the photos in a grid using cover fit (respects user's manual crop)
   for (let row = 0; row < layout.rows; row++) {
     for (let col = 0; col < layout.columns; col++) {
       const x = startX + (col * (photoWidthPx + paddingPx));
       const y = startY + (row * (photoHeightPx + paddingPx));
 
-      // Draw photo with smart crop
-      drawImageWithFaceCrop(ctx, img, faceLandmarks, photoWidthPx, photoHeightPx, spec, x, y);
+      // Draw photo with cover fit
+      drawImageCover(ctx, img, x, y, photoWidthPx, photoHeightPx);
 
       // Add a subtle border for cutting guides
       ctx.strokeStyle = "rgba(0, 0, 0, 0.1)";
@@ -246,8 +240,6 @@ export async function generatePreview(
   sheetSize: SheetSize,
   bgColor: string = "#FFFFFF",
   previewWidth: number = 400,
-  faceLandmarks?: FaceLandmarks | null,
-  countryCode?: string,
   photoWidthInches?: number,
   photoHeightInches?: number
 ): Promise<GeneratedSheet> {
@@ -296,16 +288,14 @@ export async function generatePreview(
   const startX = (previewWidth - gridWidth) / 2;
   const startY = (previewHeight - gridHeight) / 2;
 
-  // Draw the photos in a grid
-  const spec = countryCode ? getPassportSpec(countryCode) : undefined;
-
+  // Draw the photos in a grid using cover fit (respects user's manual crop)
   for (let row = 0; row < layout.rows; row++) {
     for (let col = 0; col < layout.columns; col++) {
       const x = startX + (col * (photoWidthPx + paddingPx));
       const y = startY + (row * (photoHeightPx + paddingPx));
 
-      // Draw photo with smart crop
-      drawImageWithFaceCrop(ctx, img, faceLandmarks, photoWidthPx, photoHeightPx, spec, x, y);
+      // Draw photo with cover fit
+      drawImageCover(ctx, img, x, y, photoWidthPx, photoHeightPx);
 
       // Subtle border
       ctx.strokeStyle = "rgba(0, 0, 0, 0.15)";
