@@ -18,68 +18,75 @@ export interface PassportSpec {
 }
 
 // Photo format specifications based on common passport/ID sizes
+// Lower faceHeightPercent values = smaller face in frame = more head clearance
 export const PASSPORT_SPECS: Record<string, PassportSpec> = {
-    // Standard passport sizes
+    // Standard passport sizes - reduced face percentage to prevent head cutting
     "35x45": {
         widthInches: 35 / 25.4, // 35mm
         heightInches: 45 / 25.4, // 45mm
-        faceHeightPercent: { min: 70, max: 80 },
-        eyeLinePercent: { min: 50, max: 70 },
+        faceHeightPercent: { min: 50, max: 60 },
+        eyeLinePercent: { min: 55, max: 65 },
     },
     "2x2in": {
         widthInches: 2,
         heightInches: 2,
-        faceHeightPercent: { min: 50, max: 69 },
-        eyeLinePercent: { min: 56, max: 69 },
+        faceHeightPercent: { min: 40, max: 55 },
+        eyeLinePercent: { min: 50, max: 60 },
     },
     "33x48": {
         widthInches: 33 / 25.4,
         heightInches: 48 / 25.4,
-        faceHeightPercent: { min: 70, max: 80 },
-        eyeLinePercent: { min: 50, max: 70 },
+        faceHeightPercent: { min: 50, max: 60 },
+        eyeLinePercent: { min: 55, max: 65 },
     },
     "35x35": {
         widthInches: 35 / 25.4,
         heightInches: 35 / 25.4,
-        faceHeightPercent: { min: 60, max: 75 },
-        eyeLinePercent: { min: 50, max: 65 },
+        faceHeightPercent: { min: 45, max: 55 },
+        eyeLinePercent: { min: 50, max: 60 },
+    },
+    "40x50": {
+        widthInches: 40 / 25.4,
+        heightInches: 50 / 25.4,
+        faceHeightPercent: { min: 45, max: 55 },
+        eyeLinePercent: { min: 50, max: 60 },
     },
     "50x70": {
         widthInches: 50 / 25.4,
         heightInches: 70 / 25.4,
-        faceHeightPercent: { min: 60, max: 75 },
-        eyeLinePercent: { min: 50, max: 65 },
+        faceHeightPercent: { min: 40, max: 50 },
+        eyeLinePercent: { min: 50, max: 60 },
     },
     // Custom sizes
     "wallet": {
         widthInches: 2.5,
         heightInches: 3.5,
-        faceHeightPercent: { min: 40, max: 60 },
-        eyeLinePercent: { min: 45, max: 60 },
+        faceHeightPercent: { min: 35, max: 45 },
+        eyeLinePercent: { min: 45, max: 55 },
     },
     "stamp": {
         widthInches: 25 / 25.4,
         heightInches: 30 / 25.4,
-        faceHeightPercent: { min: 70, max: 85 },
-        eyeLinePercent: { min: 50, max: 70 },
+        faceHeightPercent: { min: 55, max: 65 },
+        eyeLinePercent: { min: 50, max: 60 },
     },
     "mini": {
         widthInches: 1,
         heightInches: 1,
-        faceHeightPercent: { min: 60, max: 80 },
-        eyeLinePercent: { min: 50, max: 65 },
+        faceHeightPercent: { min: 50, max: 60 },
+        eyeLinePercent: { min: 50, max: 60 },
     },
     "visa": {
         widthInches: 2,
         heightInches: 2,
-        faceHeightPercent: { min: 50, max: 69 },
-        eyeLinePercent: { min: 56, max: 69 },
+        faceHeightPercent: { min: 40, max: 55 },
+        eyeLinePercent: { min: 50, max: 60 },
     },
     DEFAULT: {
         widthInches: 2,
         heightInches: 2,
-        faceHeightPercent: { min: 50, max: 69 },
-        eyeLinePercent: { min: 50, max: 70 },
+        faceHeightPercent: { min: 40, max: 55 },
+        eyeLinePercent: { min: 50, max: 60 },
     },
 };
 
@@ -133,9 +140,9 @@ export function calculatePassportCrop(
     let cropTop = eyeCenter.y - (cropHeight - eyeDistanceFromBottom);
     let cropLeft = faceCenter.x - cropWidth / 2;
 
-    // Adjust if top of head would be cut off
-    const topOfHead = faceLandmarks.topOfHead?.y ?? (eyeCenter.y - faceHeight * 0.45);
-    const minHeadClearance = cropHeight * 0.08; // At least 8% clearance at top
+    // Adjust if top of head would be cut off - use generous clearance
+    const topOfHead = faceLandmarks.topOfHead?.y ?? (eyeCenter.y - faceHeight * 0.5);
+    const minHeadClearance = cropHeight * 0.12; // At least 12% clearance at top for hair
     if (cropTop > topOfHead - minHeadClearance) {
         cropTop = topOfHead - minHeadClearance;
     }
