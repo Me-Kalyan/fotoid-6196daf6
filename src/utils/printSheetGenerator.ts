@@ -137,6 +137,25 @@ export function calculateGridLayout(config: SheetConfig): { columns: number; row
 }
 
 /**
+ * Calculate the photo count for a given sheet and photo size
+ */
+export function calculatePhotoCount(
+  sheetSize: SheetSize,
+  photoWidthInches?: number,
+  photoHeightInches?: number
+): { photoCount: number; columns: number; rows: number } {
+  const baseConfig = SHEET_CONFIGS[sheetSize];
+  
+  const config: SheetConfig = {
+    ...baseConfig,
+    photoWidthInches: photoWidthInches ?? baseConfig.photoWidthInches,
+    photoHeightInches: photoHeightInches ?? baseConfig.photoHeightInches,
+  };
+  
+  return calculateGridLayout(config);
+}
+
+/**
  * Generate a print sheet with tiled passport photos
  */
 export async function generatePrintSheet(
@@ -228,9 +247,19 @@ export async function generatePreview(
   bgColor: string = "#FFFFFF",
   previewWidth: number = 400,
   faceLandmarks?: FaceLandmarks | null,
-  countryCode?: string
+  countryCode?: string,
+  photoWidthInches?: number,
+  photoHeightInches?: number
 ): Promise<GeneratedSheet> {
-  const config = SHEET_CONFIGS[sheetSize];
+  const baseConfig = SHEET_CONFIGS[sheetSize];
+  
+  // Use custom photo dimensions if provided, otherwise use defaults
+  const config: SheetConfig = {
+    ...baseConfig,
+    photoWidthInches: photoWidthInches ?? baseConfig.photoWidthInches,
+    photoHeightInches: photoHeightInches ?? baseConfig.photoHeightInches,
+  };
+  
   const layout = calculateGridLayout(config);
 
   // Calculate preview dimensions maintaining aspect ratio
