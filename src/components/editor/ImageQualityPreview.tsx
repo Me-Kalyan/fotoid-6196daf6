@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertTriangle, CheckCircle, XCircle, Image, Maximize2, FileWarning } from "lucide-react";
+import { AlertTriangle, CheckCircle, XCircle, Maximize2, FileWarning, Image, X } from "lucide-react";
 import { NeoButton } from "@/components/ui/neo-button";
-import { NeoCard } from "@/components/ui/neo-card";
 
 interface ImageQualityPreviewProps {
   file: File;
@@ -53,7 +52,7 @@ export const ImageQualityPreview = ({
           id: "resolution",
           label: "Resolution",
           status: "pass",
-          message: `${img.width} × ${img.height}px — Excellent quality`,
+          message: `${img.width}×${img.height}px — Excellent`,
           icon: "resolution",
         });
       } else if (img.width >= MIN_WIDTH && img.height >= MIN_HEIGHT) {
@@ -61,7 +60,7 @@ export const ImageQualityPreview = ({
           id: "resolution",
           label: "Resolution",
           status: "warning",
-          message: `${img.width} × ${img.height}px — Acceptable, but may reduce print quality`,
+          message: `${img.width}×${img.height}px — May affect print`,
           icon: "resolution",
         });
         hasWarning = true;
@@ -70,7 +69,7 @@ export const ImageQualityPreview = ({
           id: "resolution",
           label: "Resolution",
           status: "fail",
-          message: `${img.width} × ${img.height}px — Too low. Minimum ${MIN_WIDTH}×${MIN_HEIGHT}px recommended`,
+          message: `${img.width}×${img.height}px — Too low`,
           icon: "resolution",
         });
         hasFail = true;
@@ -81,25 +80,25 @@ export const ImageQualityPreview = ({
       if (file.size > MAX_FILE_SIZE) {
         checks.push({
           id: "size",
-          label: "File Size",
+          label: "Size",
           status: "fail",
-          message: `${fileSizeMB.toFixed(1)}MB — Exceeds 10MB limit`,
+          message: `${fileSizeMB.toFixed(1)}MB — Too large`,
           icon: "size",
         });
         hasFail = true;
-      } else if (file.size < 50 * 1024) { // Less than 50KB might be too compressed
+      } else if (file.size < 50 * 1024) {
         checks.push({
           id: "size",
-          label: "File Size",
+          label: "Size",
           status: "warning",
-          message: `${(file.size / 1024).toFixed(0)}KB — Very small, may be over-compressed`,
+          message: `${(file.size / 1024).toFixed(0)}KB — May be compressed`,
           icon: "size",
         });
         hasWarning = true;
       } else {
         checks.push({
           id: "size",
-          label: "File Size",
+          label: "Size",
           status: "pass",
           message: `${fileSizeMB.toFixed(1)}MB — Good`,
           icon: "size",
@@ -113,7 +112,7 @@ export const ImageQualityPreview = ({
           id: "format",
           label: "Format",
           status: "pass",
-          message: `${file.type.split("/")[1].toUpperCase()} — Supported`,
+          message: `${file.type.split("/")[1].toUpperCase()}`,
           icon: "format",
         });
       } else {
@@ -121,7 +120,7 @@ export const ImageQualityPreview = ({
           id: "format",
           label: "Format",
           status: "fail",
-          message: `${file.type || "Unknown"} — Use JPG, PNG, or WebP`,
+          message: `Unsupported`,
           icon: "format",
         });
         hasFail = true;
@@ -138,22 +137,33 @@ export const ImageQualityPreview = ({
   const getStatusIcon = (status: QualityCheck["status"]) => {
     switch (status) {
       case "pass":
-        return <CheckCircle className="w-5 h-5 text-success" />;
+        return <CheckCircle className="w-4 h-4 text-success" />;
       case "warning":
-        return <AlertTriangle className="w-5 h-5 text-highlight" />;
+        return <AlertTriangle className="w-4 h-4 text-highlight" />;
       case "fail":
-        return <XCircle className="w-5 h-5 text-destructive" />;
+        return <XCircle className="w-4 h-4 text-destructive" />;
     }
   };
 
   const getCheckIcon = (icon: QualityCheck["icon"]) => {
     switch (icon) {
       case "resolution":
-        return <Maximize2 className="w-4 h-4" />;
+        return <Maximize2 className="w-3.5 h-3.5 text-muted-foreground" />;
       case "size":
-        return <FileWarning className="w-4 h-4" />;
+        return <FileWarning className="w-3.5 h-3.5 text-muted-foreground" />;
       case "format":
-        return <Image className="w-4 h-4" />;
+        return <Image className="w-3.5 h-3.5 text-muted-foreground" />;
+    }
+  };
+
+  const getStatusBorderClass = (status: QualityCheck["status"]) => {
+    switch (status) {
+      case "pass":
+        return "border-success/40 bg-success/5";
+      case "warning":
+        return "border-highlight/40 bg-highlight/5";
+      case "fail":
+        return "border-destructive/40 bg-destructive/5";
     }
   };
 
@@ -163,102 +173,119 @@ export const ImageQualityPreview = ({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-background/80 backdrop-blur-sm"
       >
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="w-full max-w-lg"
+          className="w-full max-w-2xl border-3 border-primary bg-card shadow-brutal"
         >
-          <NeoCard className="p-6">
-            {/* Header */}
-            <div className="text-center mb-6">
-              <h2 className="font-heading text-2xl font-bold">Image Quality Check</h2>
-              <p className="text-muted-foreground text-sm mt-1">
-                Preview before processing
-              </p>
+          {/* Compact Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b-2 border-primary bg-secondary/30">
+            <div>
+              <h2 className="font-heading text-lg font-bold">Quality Check</h2>
+              <p className="text-xs text-muted-foreground">Review before processing</p>
             </div>
+            <button
+              onClick={onCancel}
+              className="p-1.5 border-2 border-primary hover:bg-secondary transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
 
-            {/* Image Preview */}
+          {/* Landscape Layout: Image Left, Info Right */}
+          <div className="flex flex-col sm:flex-row">
+            {/* Image Preview - Left Side */}
             {preview && (
-              <div className="relative aspect-[4/3] mb-6 border-3 border-primary overflow-hidden bg-muted">
+              <div className="relative sm:w-1/2 aspect-square sm:aspect-auto bg-muted border-b-2 sm:border-b-0 sm:border-r-2 border-primary">
                 <img
                   src={preview}
                   alt="Preview"
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain p-2"
+                  style={{ maxHeight: "280px" }}
                 />
                 {dimensions && (
-                  <div className="absolute bottom-2 right-2 px-2 py-1 bg-background/90 border-2 border-primary text-xs font-mono">
-                    {dimensions.width} × {dimensions.height}
+                  <div className="absolute bottom-2 right-2 px-2 py-0.5 bg-background/95 border-2 border-primary text-xs font-mono">
+                    {dimensions.width}×{dimensions.height}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Quality Checks */}
-            <div className="space-y-3 mb-6">
-              {qualityChecks.map((check) => (
-                <motion.div
-                  key={check.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className={`flex items-start gap-3 p-3 border-2 ${
-                    check.status === "pass"
-                      ? "border-success/50 bg-success/5"
-                      : check.status === "warning"
-                      ? "border-highlight/50 bg-highlight/5"
-                      : "border-destructive/50 bg-destructive/5"
-                  }`}
-                >
-                  {getStatusIcon(check.status)}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+            {/* Info Panel - Right Side */}
+            <div className="flex-1 p-4 flex flex-col justify-between min-h-[200px] sm:min-h-[280px]">
+              {/* Quality Checks - Compact Grid */}
+              <div className="space-y-2">
+                {qualityChecks.map((check) => (
+                  <motion.div
+                    key={check.id}
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className={`flex items-center gap-2 px-3 py-2 border-2 ${getStatusBorderClass(check.status)}`}
+                  >
+                    {getStatusIcon(check.status)}
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
                       {getCheckIcon(check.icon)}
                       <span className="font-bold text-sm">{check.label}</span>
+                      <span className="text-xs text-muted-foreground truncate">
+                        {check.message}
+                      </span>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      {check.message}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                  </motion.div>
+                ))}
 
-            {/* Warning for poor quality */}
-            {overallStatus === "poor" && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="mb-6 p-4 border-3 border-destructive bg-destructive/10"
-              >
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-bold text-destructive">Quality Issues Detected</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      This image may not produce good results. Consider using a higher quality photo.
+                {/* Compact Warning */}
+                {overallStatus === "poor" && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex items-center gap-2 px-3 py-2 border-2 border-destructive bg-destructive/10 mt-3"
+                  >
+                    <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0" />
+                    <p className="text-xs text-destructive font-medium">
+                      Low quality may affect results
                     </p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
+                  </motion.div>
+                )}
 
-            {/* Actions */}
-            <div className="flex gap-3">
-              <NeoButton variant="outline" onClick={onCancel} className="flex-1">
-                Choose Different Photo
-              </NeoButton>
-              <NeoButton
-                onClick={onConfirm}
-                className="flex-1"
-                variant={overallStatus === "poor" ? "outline" : "default"}
-              >
-                {overallStatus === "poor" ? "Process Anyway" : "Continue"}
-              </NeoButton>
+                {overallStatus === "good" && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex items-center gap-2 px-3 py-2 border-2 border-success bg-success/10 mt-3"
+                  >
+                    <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
+                    <p className="text-xs text-success font-medium">
+                      Image quality looks great!
+                    </p>
+                  </motion.div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 mt-4">
+                <NeoButton
+                  variant="outline"
+                  size="sm"
+                  onClick={onCancel}
+                  className="flex-1"
+                >
+                  Change Photo
+                </NeoButton>
+                <NeoButton
+                  size="sm"
+                  onClick={onConfirm}
+                  className="flex-1"
+                  variant={overallStatus === "poor" ? "outline" : "default"}
+                >
+                  {overallStatus === "poor" ? "Continue Anyway" : "Process"}
+                </NeoButton>
+              </div>
             </div>
-          </NeoCard>
+          </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>
