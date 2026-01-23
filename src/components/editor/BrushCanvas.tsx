@@ -441,9 +441,12 @@ export const BrushCanvas = ({
     maskCtx.fillStyle = "#FFFFFF";
     maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
 
-    // Clear and redraw the canvas with the processed image
+    // Clear and redraw the canvas with the processed image using proper face-crop
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(processedImgRef.current, 0, 0, canvas.width, canvas.height);
+    
+    // Use the same face-aware crop as initial render to avoid distortion
+    const spec = getPassportSpec(selectedFormat?.id || "DEFAULT");
+    drawImageWithFaceCrop(ctx, processedImgRef.current, faceLandmarks, canvasSize.width, canvasSize.height, spec);
 
     // Push to history as new state
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -452,7 +455,7 @@ export const BrushCanvas = ({
     // Reset view
     setZoom(100);
     setPosition({ x: 0, y: 0 });
-  }, [onPushHistory, setZoom]);
+  }, [onPushHistory, setZoom, selectedFormat?.id, faceLandmarks, canvasSize]);
 
   // Cursor based on tool
   const getCursor = () => {
