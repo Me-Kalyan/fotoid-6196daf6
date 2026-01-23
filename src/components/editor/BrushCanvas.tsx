@@ -1,10 +1,9 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { motion } from "framer-motion";
-import { User, ZoomIn, ZoomOut, RotateCcw, RefreshCw, Ruler, Check } from "lucide-react";
+import { User, ZoomIn, ZoomOut, RotateCcw, RefreshCw, Ruler } from "lucide-react";
 import type { BrushTool } from "@/hooks/useCanvasBrush";
 import type { FaceLandmarks } from "@/hooks/useImageProcessing";
 import type { PhotoFormat } from "@/components/editor/ControlsPanel";
-import { FaceGuideOverlay } from "./FaceGuideOverlay";
 import { drawImageWithFaceCrop, getPassportSpec } from "@/hooks/useFaceCrop";
 import { toast } from "@/hooks/use-toast";
 
@@ -60,7 +59,7 @@ export const BrushCanvas = ({
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [showGuides, setShowGuides] = useState(true);
+  
   const [canvasSize, setCanvasSize] = useState({ width: 320, height: 320 });
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [hasRestoredState, setHasRestoredState] = useState(false);
@@ -574,13 +573,6 @@ export const BrushCanvas = ({
           )}
         </div>
 
-        {/* Enhanced Face Guide Overlay */}
-        <FaceGuideOverlay
-          faceLandmarks={faceLandmarks}
-          showGuides={showGuides}
-          canvasWidth={canvasSize.width}
-          canvasHeight={canvasSize.height}
-        />
 
         {/* Corner markers */}
         <div className="absolute top-0 left-0 w-4 h-4 border-t-3 border-l-3 border-brand pointer-events-none" />
@@ -655,13 +647,6 @@ export const BrushCanvas = ({
           Reset Edits
         </button>
 
-        <button
-          onClick={() => setShowGuides(!showGuides)}
-          className={`px-3 py-2 border-2 border-primary text-sm font-bold transition-all ${showGuides ? "bg-brand text-brand-foreground" : "bg-background hover:bg-secondary"
-            }`}
-        >
-          Guides
-        </button>
       </div>
 
       {/* Canvas Info */}
