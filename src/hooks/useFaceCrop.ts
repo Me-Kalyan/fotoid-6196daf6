@@ -17,25 +17,63 @@ export interface PassportSpec {
     eyeLinePercent: { min: number; max: number };
 }
 
-// Common passport photo specifications
+// Photo format specifications based on common passport/ID sizes
 export const PASSPORT_SPECS: Record<string, PassportSpec> = {
-    US: {
+    // Standard passport sizes
+    "35x45": {
+        widthInches: 35 / 25.4, // 35mm
+        heightInches: 45 / 25.4, // 45mm
+        faceHeightPercent: { min: 70, max: 80 },
+        eyeLinePercent: { min: 50, max: 70 },
+    },
+    "2x2in": {
         widthInches: 2,
         heightInches: 2,
         faceHeightPercent: { min: 50, max: 69 },
         eyeLinePercent: { min: 56, max: 69 },
     },
-    UK: {
-        widthInches: 35 / 25.4, // 35mm
-        heightInches: 45 / 25.4, // 45mm
-        faceHeightPercent: { min: 70, max: 80 },
-        eyeLinePercent: { min: 53, max: 66 },
-    },
-    EU: {
-        widthInches: 35 / 25.4,
-        heightInches: 45 / 25.4,
+    "33x48": {
+        widthInches: 33 / 25.4,
+        heightInches: 48 / 25.4,
         faceHeightPercent: { min: 70, max: 80 },
         eyeLinePercent: { min: 50, max: 70 },
+    },
+    "35x35": {
+        widthInches: 35 / 25.4,
+        heightInches: 35 / 25.4,
+        faceHeightPercent: { min: 60, max: 75 },
+        eyeLinePercent: { min: 50, max: 65 },
+    },
+    "50x70": {
+        widthInches: 50 / 25.4,
+        heightInches: 70 / 25.4,
+        faceHeightPercent: { min: 60, max: 75 },
+        eyeLinePercent: { min: 50, max: 65 },
+    },
+    // Custom sizes
+    "wallet": {
+        widthInches: 2.5,
+        heightInches: 3.5,
+        faceHeightPercent: { min: 40, max: 60 },
+        eyeLinePercent: { min: 45, max: 60 },
+    },
+    "stamp": {
+        widthInches: 25 / 25.4,
+        heightInches: 30 / 25.4,
+        faceHeightPercent: { min: 70, max: 85 },
+        eyeLinePercent: { min: 50, max: 70 },
+    },
+    "mini": {
+        widthInches: 1,
+        heightInches: 1,
+        faceHeightPercent: { min: 60, max: 80 },
+        eyeLinePercent: { min: 50, max: 65 },
+    },
+    "visa": {
+        widthInches: 2,
+        heightInches: 2,
+        faceHeightPercent: { min: 50, max: 69 },
+        eyeLinePercent: { min: 56, max: 69 },
     },
     DEFAULT: {
         widthInches: 2,
@@ -235,9 +273,9 @@ export function drawImageWithFaceCrop(
 }
 
 /**
- * Get the passport spec for a country code
+ * Get the passport spec for a photo format ID
  */
-export function getPassportSpec(countryCode: string): PassportSpec {
-    const upperCode = countryCode.toUpperCase();
-    return PASSPORT_SPECS[upperCode] || PASSPORT_SPECS.DEFAULT;
+export function getPassportSpec(formatId: string): PassportSpec {
+    const normalizedId = formatId.toLowerCase();
+    return PASSPORT_SPECS[normalizedId] || PASSPORT_SPECS.DEFAULT;
 }

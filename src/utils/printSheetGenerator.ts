@@ -5,7 +5,7 @@
 import { drawImageWithFaceCrop, getPassportSpec } from "@/hooks/useFaceCrop";
 import type { FaceLandmarks } from "@/hooks/useImageProcessing";
 
-export type SheetSize = "4x6" | "5x7" | "a4" | "letter";
+export type SheetSize = "4x6" | "5x7" | "3.5x5" | "6x8" | "8x10" | "8x12" | "a4" | "letter" | "postcard";
 export type FileFormat = "jpg" | "png";
 
 export interface SheetConfig {
@@ -24,6 +24,15 @@ export interface SheetConfig {
 }
 
 const SHEET_CONFIGS: Record<SheetSize, SheetConfig> = {
+  "3.5x5": {
+    widthInches: 5,
+    heightInches: 3.5,
+    dpi: 300,
+    photoWidthInches: 2,
+    photoHeightInches: 2,
+    paddingInches: 0.08,
+    marginInches: 0.1,
+  },
   "4x6": {
     widthInches: 6,
     heightInches: 4,
@@ -41,6 +50,42 @@ const SHEET_CONFIGS: Record<SheetSize, SheetConfig> = {
     photoHeightInches: 2,
     paddingInches: 0.1,
     marginInches: 0.15,
+  },
+  "6x8": {
+    widthInches: 8,
+    heightInches: 6,
+    dpi: 300,
+    photoWidthInches: 2,
+    photoHeightInches: 2,
+    paddingInches: 0.12,
+    marginInches: 0.15,
+  },
+  "8x10": {
+    widthInches: 10,
+    heightInches: 8,
+    dpi: 300,
+    photoWidthInches: 2,
+    photoHeightInches: 2,
+    paddingInches: 0.15,
+    marginInches: 0.2,
+  },
+  "8x12": {
+    widthInches: 12,
+    heightInches: 8,
+    dpi: 300,
+    photoWidthInches: 2,
+    photoHeightInches: 2,
+    paddingInches: 0.15,
+    marginInches: 0.2,
+  },
+  "postcard": {
+    widthInches: 6,
+    heightInches: 4,
+    dpi: 300,
+    photoWidthInches: 2,
+    photoHeightInches: 2,
+    paddingInches: 0.1,
+    marginInches: 0.1,
   },
   "a4": {
     widthInches: 8.27, // A4 width
