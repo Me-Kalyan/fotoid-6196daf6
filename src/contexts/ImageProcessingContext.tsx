@@ -7,6 +7,7 @@ interface CanvasState {
   dataUrl: string;
   width: number;
   height: number;
+  formatId: string;
 }
 
 interface ImageProcessingContextType {
@@ -46,7 +47,7 @@ interface ImageProcessingContextType {
 
   // Canvas state persistence
   savedCanvasState: CanvasState | null;
-  saveCanvasState: (dataUrl: string, width: number, height: number) => void;
+  saveCanvasState: (dataUrl: string, width: number, height: number, formatId: string) => void;
   clearCanvasState: () => void;
 
   // Actions
@@ -132,8 +133,8 @@ export const ImageProcessingProvider: React.FC<ImageProcessingProviderProps> = (
     setRedoImageData(null);
   }, []);
 
-  const saveCanvasState = useCallback((dataUrl: string, width: number, height: number) => {
-    setSavedCanvasState({ dataUrl, width, height });
+  const saveCanvasState = useCallback((dataUrl: string, width: number, height: number, formatId: string) => {
+    setSavedCanvasState({ dataUrl, width, height, formatId });
   }, []);
 
   const clearCanvasState = useCallback(() => {

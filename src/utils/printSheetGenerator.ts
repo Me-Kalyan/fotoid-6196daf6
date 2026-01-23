@@ -344,29 +344,9 @@ function drawImageCover(
   width: number,
   height: number
 ): void {
-  const imgRatio = img.width / img.height;
-  const targetRatio = width / height;
-
-  let sourceX = 0;
-  let sourceY = 0;
-  let sourceWidth = img.width;
-  let sourceHeight = img.height;
-
-  if (imgRatio > targetRatio) {
-    // Image is wider - crop sides
-    sourceWidth = img.height * targetRatio;
-    sourceX = (img.width - sourceWidth) / 2;
-  } else {
-    // Image is taller - crop top/bottom
-    sourceHeight = img.width / targetRatio;
-    sourceY = (img.height - sourceHeight) / 2;
-  }
-
-  ctx.drawImage(
-    img,
-    sourceX, sourceY, sourceWidth, sourceHeight,
-    x, y, width, height
-  );
+  // Draw image directly to target dimensions - the source image is already properly
+  // cropped by the user in the editor, so we just scale it to fit
+  ctx.drawImage(img, x, y, width, height);
 }
 
 function drawCropMarks(

@@ -11,6 +11,7 @@ interface SavedCanvasState {
   dataUrl: string;
   width: number;
   height: number;
+  formatId: string;
 }
 
 interface BrushCanvasProps {
@@ -27,7 +28,7 @@ interface BrushCanvasProps {
   redoImageData: ImageData | null;
   selectedFormat?: PhotoFormat;
   savedCanvasState?: SavedCanvasState | null;
-  onSaveCanvasState?: (dataUrl: string, width: number, height: number) => void;
+  onSaveCanvasState?: (dataUrl: string, width: number, height: number, formatId: string) => void;
 }
 
 const bgColorMap = {
@@ -62,7 +63,8 @@ export const BrushCanvas = ({
   
   const [canvasSize, setCanvasSize] = useState({ width: 320, height: 320 });
   const [imagesLoaded, setImagesLoaded] = useState(false);
-  const [hasRestoredState, setHasRestoredState] = useState(false);
+  // Track the format ID we've restored state for to avoid re-restoring
+  const [restoredFormatId, setRestoredFormatId] = useState<string | null>(null);
 
   const dragStartRef = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -166,33 +168,43 @@ export const BrushCanvas = ({
     maskCanvas.width = canvasSize.width;
     maskCanvas.height = canvasSize.height;
 
-    // Check if we have saved state to restore
-    if (savedCanvasState && !hasRestoredState && 
-        savedCanvasState.width === canvasSize.width && 
-        savedCanvasState.height === canvasSize.height) {
-      // Restore from saved state
+    const currentFormatId = selectedFormat?.id || "DEFAULT";
+    
+    // Check if we have saved state to restore for the same format
+    // We restore if: we have saved state AND the format matches AND we haven't already restored
+    const shouldRestore = savedCanvasState && 
+      savedCanvasState.formatId === currentFormatId &&
+      restoredFormatId !== currentFormatId;
+
+    if (shouldRestore) {
+      // Restore from saved state - scale to fit current canvas size if dimensions differ
       const img = new Image();
       img.onload = () => {
-        ctx.drawImage(img, 0, 0);
+        // Draw the saved state, scaling to fit current canvas dimensions
+        ctx.drawImage(img, 0, 0, canvasSize.width, canvasSize.height);
+        
         // Initialize mask as fully white
         maskCtx.fillStyle = "#FFFFFF";
         maskCtx.fillRect(0, 0, canvasSize.width, canvasSize.height);
+        
         // Push restored state to history
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         onPushHistory(imageData);
-        setHasRestoredState(true);
+        setRestoredFormatId(currentFormatId);
         
-        // Show toast notification that edits were restored
-        toast({
-          title: "Edits Restored",
-          description: "Your previous adjustments have been preserved.",
-          duration: 3000,
-        });
+        // Only show toast if this is first restoration (not a re-render)
+        if (restoredFormatId === null) {
+          toast({
+            title: "Edits Restored",
+            description: "Your previous adjustments have been preserved.",
+            duration: 3000,
+          });
+        }
       };
       img.src = savedCanvasState.dataUrl;
     } else {
-      // Draw processed image using smart crop
-      const spec = getPassportSpec(selectedFormat?.id || "DEFAULT");
+      // Draw processed image using smart crop (fresh start or format changed)
+      const spec = getPassportSpec(currentFormatId);
       drawImageWithFaceCrop(ctx, processedImgRef.current, faceLandmarks, canvasSize.width, canvasSize.height, spec);
 
       // Initialize mask as fully white (all processed/transparent bg shown)
@@ -202,19 +214,22 @@ export const BrushCanvas = ({
       // Push initial state to history
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       onPushHistory(imageData);
+      
+      // Mark that we've initialized for this format (no saved state to restore)
+      setRestoredFormatId(currentFormatId);
     }
-  }, [imagesLoaded, canvasSize, onPushHistory, savedCanvasState, hasRestoredState, selectedFormat?.id, faceLandmarks]);
+  }, [imagesLoaded, canvasSize, onPushHistory, savedCanvasState, restoredFormatId, selectedFormat?.id, faceLandmarks]);
 
   // Save canvas state on unmount
   useEffect(() => {
     return () => {
       const canvas = canvasRef.current;
-      if (canvas && onSaveCanvasState) {
+      if (canvas && onSaveCanvasState && selectedFormat?.id) {
         const dataUrl = canvas.toDataURL("image/png");
-        onSaveCanvasState(dataUrl, canvas.width, canvas.height);
+        onSaveCanvasState(dataUrl, canvas.width, canvas.height, selectedFormat.id);
       }
     };
-  }, [onSaveCanvasState]);
+  }, [onSaveCanvasState, selectedFormat?.id]);
 
   // Handle undo/redo
   useEffect(() => {
