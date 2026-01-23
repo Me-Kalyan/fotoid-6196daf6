@@ -1,8 +1,24 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow protected/utility routes
+Disallow: /auth
+Disallow: /dashboard
+Disallow: /subscription
+Disallow: /install
+
+# Sitemap
+Sitemap: https://fotoid.lovable.app/sitemap.xml
+
+# Crawl-delay for polite crawling
 User-agent: Googlebot
 Allow: /
+Crawl-delay: 1
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 2
 
 User-agent: Twitterbot
 Allow: /
@@ -10,5 +26,12 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
-User-agent: *
-Allow: /
+# Block bad bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
