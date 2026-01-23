@@ -7,9 +7,11 @@ import { EditorToolbar } from "./EditorToolbar";
 import { BeforeAfterSlider } from "./BeforeAfterSlider";
 import { CropAdjustment, type CropData } from "./CropAdjustment";
 import { NeoButton } from "@/components/ui/neo-button";
-import { Download, ChevronRight, SplitSquareHorizontal, Paintbrush, Crop } from "lucide-react";
+import { Download, ChevronRight, SplitSquareHorizontal, Paintbrush, Crop, Loader2 } from "lucide-react";
 import { useImageProcessingContext } from "@/contexts/ImageProcessingContext";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { applyCropTransform } from "@/utils/cropTransform";
+import { useToast } from "@/hooks/use-toast";
 
 interface EditorReviewProps {
   selectedFormat: PhotoFormat;
@@ -28,6 +30,7 @@ export const EditorReview = ({
 }: EditorReviewProps) => {
   const {
     processedImage,
+    updateProcessedImageUrl,
     compliance,
     activeTool,
     brushSize,
@@ -40,19 +43,68 @@ export const EditorReview = ({
     redoImageData,
   } = useImageProcessingContext();
 
+  const { toast } = useToast();
   const [showComparison, setShowComparison] = useState(false);
   const [showCropAdjustment, setShowCropAdjustment] = useState(false);
+  const [isApplyingCrop, setIsApplyingCrop] = useState(false);
 
   const handlePushHistory = useCallback((imageData: ImageData) => {
     pushHistory(imageData);
   }, [pushHistory]);
 
-  const handleCropConfirm = useCallback((cropData: CropData) => {
-    // For now, we log the crop data - in a full implementation,
-    // this would apply the crop transformation to the image
-    console.log("Crop applied:", cropData);
-    setShowCropAdjustment(false);
-  }, []);
+  const handleCropConfirm = useCallback(async (cropData: CropData) => {
+    if (!processedImage?.processedImage) return;
+
+    setIsApplyingCrop(true);
+    
+    try {
+      // Parse dimensions from format to get output size
+      const dims = selectedFormat.dimensions.match(/(\d+(?:\.\d+)?)\s*×\s*(\d+(?:\.\d+)?)\s*(inch(?:es)?|in|mm)/i);
+      let widthInches = 2;
+      let heightInches = 2;
+      
+      if (dims) {
+        widthInches = parseFloat(dims[1]);
+        heightInches = parseFloat(dims[2]);
+        const unit = dims[3].toLowerCase();
+        if (unit === 'mm') {
+          widthInches = widthInches / 25.4;
+          heightInches = heightInches / 25.4;
+        }
+      }
+
+      // Use 300 DPI for output
+      const outputWidth = Math.round(widthInches * 300);
+      const outputHeight = Math.round(heightInches * 300);
+
+      const newImageUrl = await applyCropTransform({
+        imageUrl: processedImage.processedImage,
+        cropData,
+        outputWidth,
+        outputHeight,
+        backgroundColor: bgColor === 'white' ? '#FFFFFF' : '#E0E0E0',
+      });
+
+      // Update the processed image with the new cropped version
+      updateProcessedImageUrl(newImageUrl);
+
+      toast({
+        title: "Crop applied",
+        description: "Your photo has been repositioned successfully.",
+      });
+
+      setShowCropAdjustment(false);
+    } catch (error) {
+      console.error("Failed to apply crop:", error);
+      toast({
+        title: "Failed to apply crop",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsApplyingCrop(false);
+    }
+  }, [processedImage, selectedFormat, bgColor, updateProcessedImageUrl, toast]);
 
   // Calculate aspect ratio from format dimensions
   const getAspectRatio = () => {
@@ -200,6 +252,7 @@ export const EditorReview = ({
             aspectRatio={getAspectRatio()}
             onConfirm={handleCropConfirm}
             onCancel={() => setShowCropAdjustment(false)}
+            isApplying={isApplyingCrop}
           />
         )}
       </AnimatePresence>
