@@ -1,11 +1,12 @@
 import { useRef, useEffect, useCallback, useState } from "react";
 import { motion } from "framer-motion";
-import { User, ZoomIn, ZoomOut, RotateCcw, RefreshCw, Ruler } from "lucide-react";
+import { User, ZoomIn, ZoomOut, RotateCcw, RefreshCw, Ruler, Check } from "lucide-react";
 import type { BrushTool } from "@/hooks/useCanvasBrush";
 import type { FaceLandmarks } from "@/hooks/useImageProcessing";
 import type { PhotoFormat } from "@/components/editor/ControlsPanel";
 import { FaceGuideOverlay } from "./FaceGuideOverlay";
 import { drawImageWithFaceCrop, getPassportSpec } from "@/hooks/useFaceCrop";
+import { toast } from "@/hooks/use-toast";
 
 interface SavedCanvasState {
   dataUrl: string;
@@ -181,6 +182,13 @@ export const BrushCanvas = ({
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         onPushHistory(imageData);
         setHasRestoredState(true);
+        
+        // Show toast notification that edits were restored
+        toast({
+          title: "Edits Restored",
+          description: "Your previous adjustments have been preserved.",
+          duration: 3000,
+        });
       };
       img.src = savedCanvasState.dataUrl;
     } else {
