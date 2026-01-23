@@ -1,12 +1,13 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useState, useCallback } from "react";
 import { ControlsPanel } from "./ControlsPanel";
 import { BrushCanvas } from "./BrushCanvas";
 import { CompliancePanel } from "./CompliancePanel";
 import { EditorToolbar } from "./EditorToolbar";
 import { BeforeAfterSlider } from "./BeforeAfterSlider";
+import { CropAdjustment, type CropData } from "./CropAdjustment";
 import { NeoButton } from "@/components/ui/neo-button";
-import { Download, ChevronRight, SplitSquareHorizontal, Paintbrush } from "lucide-react";
+import { Download, ChevronRight, SplitSquareHorizontal, Paintbrush, Crop } from "lucide-react";
 import { useImageProcessingContext } from "@/contexts/ImageProcessingContext";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { CountryFormat } from "@/pages/Editor";
@@ -42,10 +43,25 @@ export const EditorReview = ({
   } = useImageProcessingContext();
 
   const [showComparison, setShowComparison] = useState(false);
+  const [showCropAdjustment, setShowCropAdjustment] = useState(false);
 
   const handlePushHistory = useCallback((imageData: ImageData) => {
     pushHistory(imageData);
   }, [pushHistory]);
+
+  const handleCropConfirm = useCallback((cropData: CropData) => {
+    // For now, we log the crop data - in a full implementation,
+    // this would apply the crop transformation to the image
+    console.log("Crop applied:", cropData);
+    setShowCropAdjustment(false);
+  }, []);
+
+  // Calculate aspect ratio from country dimensions
+  const getAspectRatio = () => {
+    const dims = selectedCountry.dimensions.match(/(\d+)×(\d+)/);
+    if (dims) return parseInt(dims[1]) / parseInt(dims[2]);
+    return 0.8; // default passport ratio
+  };
 
   // Keyboard shortcuts for undo/redo and zoom
   useKeyboardShortcuts({
@@ -108,6 +124,15 @@ export const EditorReview = ({
               <SplitSquareHorizontal className="w-4 h-4" />
               Compare
             </motion.button>
+            <motion.button
+              onClick={() => setShowCropAdjustment(true)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-bold hover:bg-secondary transition-all"
+              whileTap={{ scale: 0.95 }}
+              title="Adjust crop position"
+            >
+              <Crop className="w-4 h-4" />
+              Crop
+            </motion.button>
           </div>
 
           {showComparison && processedImage?.originalImage && processedImage?.processedImage ? (
@@ -168,6 +193,18 @@ export const EditorReview = ({
           </div>
         </motion.aside>
       </div>
+
+      {/* Crop Adjustment Modal */}
+      <AnimatePresence>
+        {showCropAdjustment && processedImage?.processedImage && (
+          <CropAdjustment
+            imageUrl={processedImage.processedImage}
+            aspectRatio={getAspectRatio()}
+            onConfirm={handleCropConfirm}
+            onCancel={() => setShowCropAdjustment(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
