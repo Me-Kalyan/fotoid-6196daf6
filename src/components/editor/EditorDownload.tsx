@@ -30,7 +30,7 @@ interface EditorDownloadProps {
   onBack: () => void;
 }
 
-type OutputFormat = "single" | "sheet-3.5x5" | "sheet-4x6" | "sheet-5x7" | "sheet-6x8" | "sheet-8x10" | "sheet-8x12" | "sheet-postcard" | "sheet-a4" | "sheet-letter";
+type OutputFormat = "single" | "sheet-3.5x5" | "sheet-4x6" | "sheet-6x4" | "sheet-5x7" | "sheet-6x8" | "sheet-8x10" | "sheet-8x12" | "sheet-a4" | "sheet-letter";
 type FileFormat = "jpg" | "png";
 type JpgQuality = 70 | 80 | 90 | 100;
 
@@ -64,11 +64,11 @@ const outputOptions: OutputOption[] = [
     sheetSize: "4x6",
   },
   {
-    id: "sheet-postcard",
-    title: "Postcard (4×6)",
-    description: "Postcard size",
+    id: "sheet-6x4",
+    title: "6×4 Maxi",
+    description: "High density (8up)",
     icon: Grid3X3,
-    sheetSize: "postcard",
+    sheetSize: "6x4",
   },
   {
     id: "sheet-5x7",
@@ -223,9 +223,30 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
           ctx.fillStyle = bgColorHex[bgColor];
           ctx.fillRect(0, 0, targetWidthPx, targetHeightPx);
 
-          // Use smart crop for final download
-          const spec = getPassportSpec(selectedFormat.id);
-          drawImageWithFaceCrop(ctx, img, processedImage.faceLandmarks, targetWidthPx, targetHeightPx, spec);
+          // Draw the processed image using cover fit (respects user's manual crop)
+          const imgRatio = img.width / img.height;
+          const targetRatio = targetWidthPx / targetHeightPx;
+          
+          let sourceX = 0;
+          let sourceY = 0;
+          let sourceWidth = img.width;
+          let sourceHeight = img.height;
+
+          if (imgRatio > targetRatio) {
+            // Image is wider - crop sides
+            sourceWidth = img.height * targetRatio;
+            sourceX = (img.width - sourceWidth) / 2;
+          } else {
+            // Image is taller - crop top/bottom
+            sourceHeight = img.width / targetRatio;
+            sourceY = (img.height - sourceHeight) / 2;
+          }
+
+          ctx.drawImage(
+            img,
+            sourceX, sourceY, sourceWidth, sourceHeight,
+            0, 0, targetWidthPx, targetHeightPx
+          );
 
           // Generate download
           const mimeType = fileFormat === 'png' ? 'image/png' : 'image/jpeg';
@@ -250,9 +271,7 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
           bgColorHex[bgColor],
           dpi,
           photoDimensions.width,
-          photoDimensions.height,
-          processedImage.faceLandmarks,
-          selectedFormat.id
+          photoDimensions.height
         );
 
         const filename = `passport-sheet-${sheetSize}-${formatId}-${timestamp}.${fileFormat}`;
@@ -639,8 +658,6 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
                 photoUrl={processedImage.processedImage}
                 sheetSize={selectedOption.sheetSize}
                 bgColor={bgColorHex[bgColor]}
-                faceLandmarks={processedImage.faceLandmarks}
-                formatId={selectedFormat.id}
                 photoWidthInches={photoDimensions.width}
                 photoHeightInches={photoDimensions.height}
               />

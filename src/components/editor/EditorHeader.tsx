@@ -13,6 +13,7 @@ export const EditorHeader = ({ editorState, onStartOver }: EditorHeaderProps) =>
   const stateLabels: Record<EditorState, string> = {
     upload: "Upload Photo",
     processing: "Processing...",
+    crop: "Crop Face",
     review: "Review & Edit",
     download: "Download",
   };
