@@ -12,12 +12,12 @@ import {
   Monitor,
   PrinterCheck
 } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { NeoButton } from "@/components/ui/neo-button";
 import { Slider } from "@/components/ui/slider";
 import { PrintSheetPreview } from "./PrintSheetPreview";
 import { useImageProcessingContext } from "@/contexts/ImageProcessingContext";
-import { generatePrintSheet, downloadSheet, type SheetSize } from "@/utils/printSheetGenerator";
+import { generatePrintSheet, downloadSheet, calculatePhotoCount, type SheetSize } from "@/utils/printSheetGenerator";
 import { useDownloadHistory } from "@/hooks/useDownloadHistory";
 import { useToast } from "@/hooks/use-toast";
 import type { PhotoFormat } from "@/components/editor/ControlsPanel";
@@ -39,7 +39,6 @@ interface OutputOption {
   title: string;
   description: string;
   icon: React.ElementType;
-  photos: number;
   sheetSize?: SheetSize;
 }
 
@@ -49,78 +48,68 @@ const outputOptions: OutputOption[] = [
     title: "Single Photo",
     description: "One cropped passport photo",
     icon: FileImage,
-    photos: 1,
   },
   {
     id: "sheet-3.5x5",
     title: "3.5×5 Sheet",
-    description: "Compact print, 2 photos",
+    description: "Compact print",
     icon: Grid3X3,
-    photos: 2,
     sheetSize: "3.5x5",
   },
   {
     id: "sheet-4x6",
     title: "4×6 Sheet",
-    description: "Standard photo print, 4 photos",
+    description: "Standard photo print",
     icon: Grid3X3,
-    photos: 4,
     sheetSize: "4x6",
   },
   {
     id: "sheet-postcard",
     title: "Postcard (4×6)",
-    description: "Postcard size, 4 photos",
+    description: "Postcard size",
     icon: Grid3X3,
-    photos: 4,
     sheetSize: "postcard",
   },
   {
     id: "sheet-5x7",
     title: "5×7 Sheet",
-    description: "Medium print, 6 photos",
+    description: "Medium print",
     icon: Grid3X3,
-    photos: 6,
     sheetSize: "5x7",
   },
   {
     id: "sheet-6x8",
     title: "6×8 Sheet",
-    description: "Large print, 6 photos",
+    description: "Large print",
     icon: Grid3X3,
-    photos: 6,
     sheetSize: "6x8",
   },
   {
     id: "sheet-8x10",
     title: "8×10 Sheet",
-    description: "Photo studio size, 12 photos",
+    description: "Photo studio size",
     icon: Printer,
-    photos: 12,
     sheetSize: "8x10",
   },
   {
     id: "sheet-8x12",
     title: "8×12 Sheet",
-    description: "Large format, 15 photos",
+    description: "Large format",
     icon: Printer,
-    photos: 15,
     sheetSize: "8x12",
   },
   {
     id: "sheet-a4",
     title: "A4 Sheet",
-    description: "International paper, 8+ photos",
+    description: "International paper",
     icon: Printer,
-    photos: 8,
     sheetSize: "a4",
   },
   {
     id: "sheet-letter",
     title: "Letter Sheet",
-    description: "US Letter (8.5×11), 10 photos",
+    description: "US Letter (8.5×11)",
     icon: Printer,
-    photos: 10,
     sheetSize: "letter",
   },
 ];
@@ -177,6 +166,18 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
 
   // Parse the selected format's dimensions
   const photoDimensions = parseDimensions(selectedFormat.dimensions);
+
+  // Calculate photo count dynamically based on selected sheet and photo size
+  const photoCountInfo = useMemo(() => {
+    if (selectedOutput === "single" || !selectedOption?.sheetSize) {
+      return { photoCount: 1, columns: 1, rows: 1 };
+    }
+    return calculatePhotoCount(
+      selectedOption.sheetSize,
+      photoDimensions.width,
+      photoDimensions.height
+    );
+  }, [selectedOutput, selectedOption?.sheetSize, photoDimensions.width, photoDimensions.height]);
 
   const handleDownload = useCallback(async () => {
     if (!processedImage?.processedImage) return;
@@ -326,38 +327,45 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
           >
             <h2 className="font-heading font-bold text-lg mb-4">Output Format</h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {outputOptions.map((option) => (
-                <motion.div
-                  key={option.id}
-                  className={`relative p-3 border-3 cursor-pointer transition-all ${selectedOutput === option.id
-                    ? "border-brand bg-brand/10 shadow-brutal"
-                    : "border-primary hover:shadow-brutal-hover bg-card"
-                    }`}
-                  onClick={() => setSelectedOutput(option.id)}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <div className="flex flex-col items-center text-center">
-                    <div className={`w-10 h-10 mb-2 border-2 border-primary flex items-center justify-center ${selectedOutput === option.id ? "bg-brand text-brand-foreground" : "bg-secondary"
-                      }`}>
-                      <option.icon className="w-5 h-5" />
-                    </div>
-                    <h3 className="font-heading font-bold text-xs">{option.title}</h3>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {option.description}
-                    </p>
+              {outputOptions.map((option) => {
+                // Calculate photo count for this option
+                const optionPhotoCount = option.sheetSize 
+                  ? calculatePhotoCount(option.sheetSize, photoDimensions.width, photoDimensions.height).photoCount 
+                  : 1;
+                
+                return (
+                  <motion.div
+                    key={option.id}
+                    className={`relative p-3 border-3 cursor-pointer transition-all ${selectedOutput === option.id
+                      ? "border-brand bg-brand/10 shadow-brutal"
+                      : "border-primary hover:shadow-brutal-hover bg-card"
+                      }`}
+                    onClick={() => setSelectedOutput(option.id)}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <div className={`w-10 h-10 mb-2 border-2 border-primary flex items-center justify-center ${selectedOutput === option.id ? "bg-brand text-brand-foreground" : "bg-secondary"
+                        }`}>
+                        <option.icon className="w-5 h-5" />
+                      </div>
+                      <h3 className="font-heading font-bold text-xs">{option.title}</h3>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {option.description}, {optionPhotoCount} photo{optionPhotoCount !== 1 ? 's' : ''}
+                      </p>
 
-                    {selectedOutput === option.id && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute -top-2 -right-2 w-5 h-5 bg-brand border-2 border-primary flex items-center justify-center"
-                      >
-                        <Check className="w-3 h-3 text-brand-foreground" />
-                      </motion.div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
+                      {selectedOutput === option.id && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute -top-2 -right-2 w-5 h-5 bg-brand border-2 border-primary flex items-center justify-center"
+                        >
+                          <Check className="w-3 h-3 text-brand-foreground" />
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
 
             {/* Selected Sheet Info */}
@@ -374,11 +382,11 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
                     <span className="font-bold text-sm">{selectedOption.title}</span>
                   </div>
                   <div className="text-sm font-mono bg-background px-2 py-0.5 border border-primary">
-                    ~{selectedOption.photos} photos
+                    {photoCountInfo.photoCount} photos
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Photo size: {selectedFormat.dimensions} • Sheet will be tiled automatically
+                  Photo size: {selectedFormat.dimensions} • {photoCountInfo.columns}×{photoCountInfo.rows} grid
                 </p>
               </motion.div>
             )}

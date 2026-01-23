@@ -27,7 +27,16 @@ export const PrintSheetPreview = ({ photoUrl, sheetSize, bgColor, faceLandmarks,
       setError(null);
 
       try {
-        const result = await generatePreview(photoUrl, sheetSize, bgColor, 300, faceLandmarks, formatId);
+        const result = await generatePreview(
+          photoUrl, 
+          sheetSize, 
+          bgColor, 
+          300, 
+          faceLandmarks, 
+          formatId,
+          photoWidthInches,
+          photoHeightInches
+        );
         setPreview(result);
       } catch (err) {
         console.error("Failed to generate preview:", err);
@@ -38,7 +47,7 @@ export const PrintSheetPreview = ({ photoUrl, sheetSize, bgColor, faceLandmarks,
     };
 
     generate();
-  }, [photoUrl, sheetSize, bgColor, faceLandmarks, formatId]);
+  }, [photoUrl, sheetSize, bgColor, faceLandmarks, formatId, photoWidthInches, photoHeightInches]);
 
   if (error) {
     return (
