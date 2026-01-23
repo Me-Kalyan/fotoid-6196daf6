@@ -129,6 +129,16 @@ export const useImageProcessing = () => {
     setError(null);
   }, []);
 
+  const updateProcessedImageUrl = useCallback((newUrl: string) => {
+    setProcessedImage((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        processedImage: newUrl,
+      };
+    });
+  }, []);
+
   return {
     processImage,
     isProcessing,
@@ -136,6 +146,7 @@ export const useImageProcessing = () => {
     processedImage,
     error,
     reset,
+    updateProcessedImageUrl,
   };
 };
 

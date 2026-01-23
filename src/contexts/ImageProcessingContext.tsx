@@ -15,6 +15,7 @@ interface ImageProcessingContextType {
 
   // Processed result
   processedImage: ProcessedImage | null;
+  updateProcessedImageUrl: (newUrl: string) => void;
 
   // Compliance
   compliance: ComplianceResult;
@@ -68,6 +69,7 @@ export const ImageProcessingProvider: React.FC<ImageProcessingProviderProps> = (
     processedImage,
     error,
     reset: resetProcessing,
+    updateProcessedImageUrl,
   } = useImageProcessing();
 
   const compliance = useFaceCompliance({
@@ -143,6 +145,7 @@ export const ImageProcessingProvider: React.FC<ImageProcessingProviderProps> = (
         progress,
         error,
         processedImage,
+        updateProcessedImageUrl,
         compliance,
         activeTool,
         setActiveTool,

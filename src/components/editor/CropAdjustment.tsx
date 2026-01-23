@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Move, Check, X, RotateCcw, ZoomIn, ZoomOut, Crop } from "lucide-react";
+import { Move, Check, X, RotateCcw, ZoomIn, ZoomOut, Crop, Loader2 } from "lucide-react";
 import { NeoButton } from "@/components/ui/neo-button";
 import { NeoCard } from "@/components/ui/neo-card";
 
@@ -9,6 +9,7 @@ interface CropAdjustmentProps {
   aspectRatio?: number; // width/height, e.g., 2/2.5 for passport
   onConfirm: (cropData: CropData) => void;
   onCancel: () => void;
+  isApplying?: boolean;
 }
 
 export interface CropData {
@@ -23,6 +24,7 @@ export const CropAdjustment = ({
   aspectRatio = 1,
   onConfirm,
   onCancel,
+  isApplying = false,
 }: CropAdjustmentProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -246,12 +248,21 @@ export const CropAdjustment = ({
 
           {/* Actions */}
           <div className="flex gap-3 mt-6">
-            <NeoButton variant="outline" onClick={onCancel} className="flex-1">
+            <NeoButton variant="outline" onClick={onCancel} className="flex-1" disabled={isApplying}>
               Cancel
             </NeoButton>
-            <NeoButton onClick={handleConfirm} className="flex-1">
-              <Check className="w-4 h-4 mr-2" />
-              Apply
+            <NeoButton onClick={handleConfirm} className="flex-1" disabled={isApplying}>
+              {isApplying ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Applying...
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  Apply
+                </>
+              )}
             </NeoButton>
           </div>
         </NeoCard>
