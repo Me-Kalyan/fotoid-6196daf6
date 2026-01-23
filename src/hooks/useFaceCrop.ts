@@ -85,6 +85,7 @@ export const PASSPORT_SPECS: Record<string, PassportSpec> = {
 
 /**
  * Calculate the optimal crop region for a passport photo based on face landmarks
+ * Improved algorithm that better centers the face and ensures proper head clearance
  */
 export function calculatePassportCrop(
     faceLandmarks: FaceLandmarks,
@@ -93,59 +94,80 @@ export function calculatePassportCrop(
     spec: PassportSpec = PASSPORT_SPECS.DEFAULT,
     targetAspectRatioOverride?: number
 ): CropRegion {
-    // Calculate face dimensions from landmarks
+    // Calculate face center and dimensions from landmarks
     const eyeCenter = {
         x: (faceLandmarks.leftEye.x + faceLandmarks.rightEye.x) / 2,
         y: (faceLandmarks.leftEye.y + faceLandmarks.rightEye.y) / 2,
     };
 
-    const eyeDistance = Math.abs(faceLandmarks.rightEye.x - faceLandmarks.leftEye.x);
-    // Face height estimation: distance from chin to eyes is roughly half the total head height
-    const faceHeight = Math.abs(faceLandmarks.chin.y - eyeCenter.y) * 2;
+    // Use the faceBox for more accurate sizing if available
+    const faceHeight = faceLandmarks.faceBox.height;
+    const faceWidth = faceLandmarks.faceBox.width;
+    const faceCenter = {
+        x: faceLandmarks.faceBox.x + faceWidth / 2,
+        y: faceLandmarks.faceBox.y + faceHeight / 2,
+    };
 
-    // Target: eyes at target percentage from bottom, face at target percentage of height
+    // Calculate target aspect ratio
     const targetAspectRatio = targetAspectRatioOverride ?? (spec.widthInches / spec.heightInches);
+    
+    // Target face percentage of photo height (use middle of the recommended range)
     const targetFacePercent = (spec.faceHeightPercent.min + spec.faceHeightPercent.max) / 2 / 100;
+    
+    // Target eye line percentage from bottom
     const targetEyePercent = (spec.eyeLinePercent.min + spec.eyeLinePercent.max) / 2 / 100;
 
-    // Calculate crop dimensions
-    // The height of the crop is determined by how much of the frame the face should fill
-    const cropHeight = faceHeight / targetFacePercent;
-    const cropWidth = cropHeight * targetAspectRatio;
+    // Calculate crop dimensions based on face size and target percentage
+    // The face should fill targetFacePercent of the total height
+    let cropHeight = faceHeight / targetFacePercent;
+    let cropWidth = cropHeight * targetAspectRatio;
 
-    // Position crop so eyes are at the correct height percentage
-    // targetEyePercent is from bottom
-    const eyeOffsetFromBottom = cropHeight * targetEyePercent;
-    const cropTop = eyeCenter.y - (cropHeight - eyeOffsetFromBottom);
+    // Add some padding to ensure we have room for head/chin clearance
+    const headClearance = faceHeight * 0.35; // Extra space above head
+    const chinClearance = faceHeight * 0.2; // Extra space below chin
+    
+    // Position crop:
+    // - Eyes should be at targetEyePercent from bottom
+    // - Center horizontally on face
+    const eyeDistanceFromBottom = cropHeight * targetEyePercent;
+    let cropTop = eyeCenter.y - (cropHeight - eyeDistanceFromBottom);
+    let cropLeft = faceCenter.x - cropWidth / 2;
 
-    // Center horizontally on face
-    const centerX = (faceLandmarks.leftEye.x + faceLandmarks.rightEye.x) / 2;
-    const cropLeft = centerX - cropWidth / 2;
-
-    // Boundary check and aspect-ratio preserving adjustment
-    let x = cropLeft;
-    let y = cropTop;
-    let w = cropWidth;
-    let h = cropHeight;
-
-    // Handle overflow or underflow while maintaining aspect ratio
-    if (w > imageWidth || h > imageHeight) {
-        const scale = Math.min(imageWidth / w, imageHeight / h);
-        w *= scale;
-        h *= scale;
-        x = centerX - w / 2;
-        y = eyeCenter.y - (h - (h * targetEyePercent));
+    // Adjust if top of head would be cut off
+    const topOfHead = faceLandmarks.topOfHead?.y ?? (eyeCenter.y - faceHeight * 0.45);
+    const minHeadClearance = cropHeight * 0.08; // At least 8% clearance at top
+    if (cropTop > topOfHead - minHeadClearance) {
+        cropTop = topOfHead - minHeadClearance;
     }
 
-    // Ensure within bounds
-    x = Math.max(0, Math.min(imageWidth - w, x));
-    y = Math.max(0, Math.min(imageHeight - h, y));
+    // Adjust if chin would be cut off
+    const chinY = faceLandmarks.chin?.y ?? (eyeCenter.y + faceHeight * 0.35);
+    const minChinClearance = cropHeight * 0.05; // At least 5% clearance at bottom
+    if (cropTop + cropHeight < chinY + minChinClearance) {
+        cropHeight = chinY + minChinClearance - cropTop;
+        cropWidth = cropHeight * targetAspectRatio;
+        cropLeft = faceCenter.x - cropWidth / 2;
+    }
+
+    // Boundary checking - ensure crop stays within image bounds
+    // Scale down if necessary while maintaining aspect ratio
+    if (cropWidth > imageWidth || cropHeight > imageHeight) {
+        const scale = Math.min(imageWidth / cropWidth, imageHeight / cropHeight);
+        cropWidth *= scale;
+        cropHeight *= scale;
+        cropLeft = faceCenter.x - cropWidth / 2;
+        cropTop = eyeCenter.y - (cropHeight - cropHeight * targetEyePercent);
+    }
+
+    // Clamp to image bounds
+    cropLeft = Math.max(0, Math.min(imageWidth - cropWidth, cropLeft));
+    cropTop = Math.max(0, Math.min(imageHeight - cropHeight, cropTop));
 
     return {
-        x: Math.round(x),
-        y: Math.round(y),
-        width: Math.round(w),
-        height: Math.round(h),
+        x: Math.round(cropLeft),
+        y: Math.round(cropTop),
+        width: Math.round(cropWidth),
+        height: Math.round(cropHeight),
     };
 }
 
