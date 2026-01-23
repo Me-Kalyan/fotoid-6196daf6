@@ -3,6 +3,12 @@ import { useImageProcessing, type ProcessedImage, type ProcessingProgress } from
 import { useFaceCompliance, type ComplianceResult } from "@/hooks/useFaceCompliance";
 import { useCanvasBrush, type BrushTool } from "@/hooks/useCanvasBrush";
 
+interface CanvasState {
+  dataUrl: string;
+  width: number;
+  height: number;
+}
+
 interface ImageProcessingContextType {
   // Original file
   originalFile: File | null;
@@ -38,6 +44,11 @@ interface ImageProcessingContextType {
   redoImageData: ImageData | null;
   clearUndoRedoData: () => void;
 
+  // Canvas state persistence
+  savedCanvasState: CanvasState | null;
+  saveCanvasState: (dataUrl: string, width: number, height: number) => void;
+  clearCanvasState: () => void;
+
   // Actions
   processImage: (file: File) => Promise<ProcessedImage | null>;
   reset: () => void;
@@ -61,6 +72,7 @@ export const ImageProcessingProvider: React.FC<ImageProcessingProviderProps> = (
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [undoImageData, setUndoImageData] = useState<ImageData | null>(null);
   const [redoImageData, setRedoImageData] = useState<ImageData | null>(null);
+  const [savedCanvasState, setSavedCanvasState] = useState<CanvasState | null>(null);
 
   const {
     processImage: processImageHook,
@@ -120,11 +132,20 @@ export const ImageProcessingProvider: React.FC<ImageProcessingProviderProps> = (
     setRedoImageData(null);
   }, []);
 
+  const saveCanvasState = useCallback((dataUrl: string, width: number, height: number) => {
+    setSavedCanvasState({ dataUrl, width, height });
+  }, []);
+
+  const clearCanvasState = useCallback(() => {
+    setSavedCanvasState(null);
+  }, []);
+
   const processImage = useCallback(async (file: File) => {
     setOriginalFile(file);
     resetHistory();
     setUndoImageData(null);
     setRedoImageData(null);
+    setSavedCanvasState(null);
     return processImageHook(file);
   }, [processImageHook, resetHistory]);
 
@@ -134,6 +155,7 @@ export const ImageProcessingProvider: React.FC<ImageProcessingProviderProps> = (
     resetHistory();
     setUndoImageData(null);
     setRedoImageData(null);
+    setSavedCanvasState(null);
   }, [resetProcessing, resetHistory]);
 
   return (
@@ -161,6 +183,9 @@ export const ImageProcessingProvider: React.FC<ImageProcessingProviderProps> = (
         undoImageData,
         redoImageData,
         clearUndoRedoData,
+        savedCanvasState,
+        saveCanvasState,
+        clearCanvasState,
         processImage,
         reset,
       }}

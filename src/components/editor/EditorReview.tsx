@@ -41,6 +41,8 @@ export const EditorReview = ({
     redo,
     undoImageData,
     redoImageData,
+    savedCanvasState,
+    saveCanvasState,
   } = useImageProcessingContext();
 
   const { toast } = useToast();
@@ -216,6 +218,8 @@ export const EditorReview = ({
               undoImageData={undoImageData}
               redoImageData={redoImageData}
               selectedFormat={selectedFormat}
+              savedCanvasState={savedCanvasState}
+              onSaveCanvasState={saveCanvasState}
             />
           )}
         </motion.main>
