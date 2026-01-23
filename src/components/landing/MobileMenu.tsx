@@ -14,7 +14,7 @@ interface MobileMenuProps {
 const menuItems = [
   { label: "How it Works", href: "#how-it-works" },
   { label: "Pricing", href: "#pricing" },
-  { label: "Countries", href: "#countries" },
+  { label: "Photo Sizes", href: "#photo-sizes" },
 ];
 
 export const MobileMenu = ({ isOpen, onToggle }: MobileMenuProps) => {

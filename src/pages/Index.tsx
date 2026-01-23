@@ -1,6 +1,5 @@
 import Header from "@/components/landing/Header";
 import Hero from "@/components/landing/Hero";
-import { CountryMarquee } from "@/components/ui/country-marquee";
 import HowItWorks from "@/components/landing/HowItWorks";
 import { GlobalDocumentExplorer } from "@/components/landing/GlobalDocumentExplorer";
 import Pricing from "@/components/landing/Pricing";
@@ -13,13 +12,12 @@ const Index = () => {
       <Header />
       <main>
         <Hero />
-        <section id="countries">
-          <CountryMarquee />
-        </section>
         <section id="how-it-works">
           <HowItWorks />
         </section>
-        <GlobalDocumentExplorer />
+        <section id="photo-sizes">
+          <GlobalDocumentExplorer />
+        </section>
         <section id="pricing">
           <Pricing />
         </section>
