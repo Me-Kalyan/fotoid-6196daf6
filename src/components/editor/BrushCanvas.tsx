@@ -7,6 +7,12 @@ import type { PhotoFormat } from "@/components/editor/ControlsPanel";
 import { FaceGuideOverlay } from "./FaceGuideOverlay";
 import { drawImageWithFaceCrop, getPassportSpec } from "@/hooks/useFaceCrop";
 
+interface SavedCanvasState {
+  dataUrl: string;
+  width: number;
+  height: number;
+}
+
 interface BrushCanvasProps {
   bgColor: "white" | "grey";
   processedImageUrl?: string;
@@ -20,6 +26,8 @@ interface BrushCanvasProps {
   undoImageData: ImageData | null;
   redoImageData: ImageData | null;
   selectedFormat?: PhotoFormat;
+  savedCanvasState?: SavedCanvasState | null;
+  onSaveCanvasState?: (dataUrl: string, width: number, height: number) => void;
 }
 
 const bgColorMap = {
@@ -40,6 +48,8 @@ export const BrushCanvas = ({
   undoImageData,
   redoImageData,
   selectedFormat,
+  savedCanvasState,
+  onSaveCanvasState,
 }: BrushCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const maskCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -52,6 +62,7 @@ export const BrushCanvas = ({
   const [showGuides, setShowGuides] = useState(true);
   const [canvasSize, setCanvasSize] = useState({ width: 320, height: 320 });
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [hasRestoredState, setHasRestoredState] = useState(false);
 
   const dragStartRef = useRef({ x: 0, y: 0, posX: 0, posY: 0 });
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -155,18 +166,48 @@ export const BrushCanvas = ({
     maskCanvas.width = canvasSize.width;
     maskCanvas.height = canvasSize.height;
 
-    // Draw processed image using smart crop
-    const spec = getPassportSpec(selectedFormat?.id || "DEFAULT");
-    drawImageWithFaceCrop(ctx, processedImgRef.current, faceLandmarks, canvasSize.width, canvasSize.height, spec);
+    // Check if we have saved state to restore
+    if (savedCanvasState && !hasRestoredState && 
+        savedCanvasState.width === canvasSize.width && 
+        savedCanvasState.height === canvasSize.height) {
+      // Restore from saved state
+      const img = new Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0);
+        // Initialize mask as fully white
+        maskCtx.fillStyle = "#FFFFFF";
+        maskCtx.fillRect(0, 0, canvasSize.width, canvasSize.height);
+        // Push restored state to history
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        onPushHistory(imageData);
+        setHasRestoredState(true);
+      };
+      img.src = savedCanvasState.dataUrl;
+    } else {
+      // Draw processed image using smart crop
+      const spec = getPassportSpec(selectedFormat?.id || "DEFAULT");
+      drawImageWithFaceCrop(ctx, processedImgRef.current, faceLandmarks, canvasSize.width, canvasSize.height, spec);
 
-    // Initialize mask as fully white (all processed/transparent bg shown)
-    maskCtx.fillStyle = "#FFFFFF";
-    maskCtx.fillRect(0, 0, canvasSize.width, canvasSize.height);
+      // Initialize mask as fully white (all processed/transparent bg shown)
+      maskCtx.fillStyle = "#FFFFFF";
+      maskCtx.fillRect(0, 0, canvasSize.width, canvasSize.height);
 
-    // Push initial state to history
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    onPushHistory(imageData);
-  }, [imagesLoaded, canvasSize, onPushHistory]);
+      // Push initial state to history
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      onPushHistory(imageData);
+    }
+  }, [imagesLoaded, canvasSize, onPushHistory, savedCanvasState, hasRestoredState, selectedFormat?.id, faceLandmarks]);
+
+  // Save canvas state on unmount
+  useEffect(() => {
+    return () => {
+      const canvas = canvasRef.current;
+      if (canvas && onSaveCanvasState) {
+        const dataUrl = canvas.toDataURL("image/png");
+        onSaveCanvasState(dataUrl, canvas.width, canvas.height);
+      }
+    };
+  }, [onSaveCanvasState]);
 
   // Handle undo/redo
   useEffect(() => {
