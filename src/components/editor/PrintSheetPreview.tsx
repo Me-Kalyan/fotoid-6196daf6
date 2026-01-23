@@ -70,18 +70,75 @@ export const PrintSheetPreview = ({ photoUrl, sheetSize, bgColor, faceLandmarks,
     );
   }
 
+  // Calculate grid overlay positions based on preview dimensions
+  const gridOverlay = preview ? (() => {
+    const containerAspect = preview.columns > preview.rows ? 3 / 2 : 2 / 3;
+    const photoAspectRatio = (photoWidthInches || 2) / (photoHeightInches || 2);
+    
+    // Calculate individual photo cell percentages
+    const cellWidthPercent = 100 / preview.columns;
+    const cellHeightPercent = 100 / preview.rows;
+    
+    return { cellWidthPercent, cellHeightPercent };
+  })() : null;
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       className="relative w-full"
     >
-      <div className="border-3 border-primary shadow-brutal overflow-hidden bg-card">
+      <div className="relative border-3 border-primary shadow-brutal overflow-hidden bg-card">
         <img
           src={preview.dataUrl}
           alt={`${sheetSize} print sheet preview with ${preview.photoCount} photos`}
           className="w-full h-auto"
         />
+        
+        {/* Cut guide grid overlay */}
+        {gridOverlay && (
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Vertical cut lines */}
+            {Array.from({ length: preview.columns - 1 }).map((_, i) => (
+              <motion.div
+                key={`v-${i}`}
+                initial={{ scaleY: 0 }}
+                animate={{ scaleY: 1 }}
+                transition={{ delay: 0.3 + i * 0.05, duration: 0.3 }}
+                className="absolute top-0 bottom-0 w-px origin-top"
+                style={{
+                  left: `${(i + 1) * gridOverlay.cellWidthPercent}%`,
+                  background: 'repeating-linear-gradient(to bottom, hsl(var(--brand)) 0, hsl(var(--brand)) 4px, transparent 4px, transparent 8px)',
+                }}
+              />
+            ))}
+            
+            {/* Horizontal cut lines */}
+            {Array.from({ length: preview.rows - 1 }).map((_, i) => (
+              <motion.div
+                key={`h-${i}`}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ delay: 0.3 + i * 0.05, duration: 0.3 }}
+                className="absolute left-0 right-0 h-px origin-left"
+                style={{
+                  top: `${(i + 1) * gridOverlay.cellHeightPercent}%`,
+                  background: 'repeating-linear-gradient(to right, hsl(var(--brand)) 0, hsl(var(--brand)) 4px, transparent 4px, transparent 8px)',
+                }}
+              />
+            ))}
+            
+            {/* Corner scissors icon */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5 }}
+              className="absolute top-1 left-1 text-brand text-xs font-bold bg-background/80 px-1 py-0.5 border border-brand"
+            >
+              ✂️ Cut here
+            </motion.div>
+          </div>
+        )}
       </div>
 
       {/* Info badge */}
@@ -97,7 +154,7 @@ export const PrintSheetPreview = ({ photoUrl, sheetSize, bgColor, faceLandmarks,
       {/* Grid info */}
       <div className="mt-3 flex items-center justify-between text-xs">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 border border-primary bg-secondary" />
+          <div className="w-3 h-3 border border-brand bg-brand/20" style={{ borderStyle: 'dashed' }} />
           <span className="text-muted-foreground">
             {preview.columns} × {preview.rows} grid
           </span>
