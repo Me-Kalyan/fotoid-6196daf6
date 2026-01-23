@@ -3,12 +3,12 @@ import { motion } from "framer-motion";
 import { User, ZoomIn, ZoomOut, RotateCcw, RefreshCw, Ruler } from "lucide-react";
 import type { BrushTool } from "@/hooks/useCanvasBrush";
 import type { FaceLandmarks } from "@/hooks/useImageProcessing";
-import type { CountryFormat } from "@/pages/Editor";
+import type { PhotoFormat } from "@/components/editor/ControlsPanel";
 import { FaceGuideOverlay } from "./FaceGuideOverlay";
 import { drawImageWithFaceCrop, getPassportSpec } from "@/hooks/useFaceCrop";
 
 interface BrushCanvasProps {
-  bgColor: "white" | "grey" | "blue";
+  bgColor: "white" | "grey";
   processedImageUrl?: string;
   originalImageUrl?: string;
   faceLandmarks?: FaceLandmarks | null;
@@ -19,13 +19,12 @@ interface BrushCanvasProps {
   onPushHistory: (imageData: ImageData) => void;
   undoImageData: ImageData | null;
   redoImageData: ImageData | null;
-  selectedCountry?: CountryFormat;
+  selectedFormat?: PhotoFormat;
 }
 
 const bgColorMap = {
   white: "#FFFFFF",
   grey: "#E0E0E0",
-  blue: "#D6EAF8",
 };
 
 export const BrushCanvas = ({
@@ -40,7 +39,7 @@ export const BrushCanvas = ({
   onPushHistory,
   undoImageData,
   redoImageData,
-  selectedCountry,
+  selectedFormat,
 }: BrushCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const maskCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -98,9 +97,9 @@ export const BrushCanvas = ({
 
       processedImgRef.current = processed;
 
-      // Calculate canvas size based on SELECTED COUNTRY dimensions
+      // Calculate canvas size based on SELECTED FORMAT dimensions
       // This ensures the preview shows the correct aspect ratio
-      const photoDims = parseDimensions(selectedCountry?.dimensions);
+      const photoDims = parseDimensions(selectedFormat?.dimensions);
       const photoAspectRatio = photoDims.height / photoDims.width;
 
       // Max preview size while maintaining aspect ratio
@@ -136,7 +135,7 @@ export const BrushCanvas = ({
     };
 
     loadImages();
-  }, [processedImageUrl, originalImageUrl, selectedCountry?.dimensions]);
+  }, [processedImageUrl, originalImageUrl, selectedFormat?.dimensions]);
 
   // Initialize canvas when images are loaded
   useEffect(() => {
@@ -157,7 +156,7 @@ export const BrushCanvas = ({
     maskCanvas.height = canvasSize.height;
 
     // Draw processed image using smart crop
-    const spec = getPassportSpec(selectedCountry?.code || "DEFAULT");
+    const spec = getPassportSpec(selectedFormat?.id || "DEFAULT");
     drawImageWithFaceCrop(ctx, processedImgRef.current, faceLandmarks, canvasSize.width, canvasSize.height, spec);
 
     // Initialize mask as fully white (all processed/transparent bg shown)
@@ -240,7 +239,7 @@ export const BrushCanvas = ({
     const procCtx = tempProcessed.getContext("2d");
     if (!origCtx || !procCtx) return;
 
-    const spec = getPassportSpec(selectedCountry?.code || "DEFAULT");
+    const spec = getPassportSpec(selectedFormat?.id || "DEFAULT");
     drawImageWithFaceCrop(origCtx, originalImgRef.current, faceLandmarks, width, height, spec);
     drawImageWithFaceCrop(procCtx, processedImgRef.current, faceLandmarks, width, height, spec);
 
@@ -555,10 +554,10 @@ export const BrushCanvas = ({
         )}
 
         {/* Size dimensions badge */}
-        {selectedCountry && (
+        {selectedFormat && (
           <div className="absolute top-2 left-2 bg-background/90 border-2 border-primary px-2 py-1 shadow-brutal pointer-events-none flex items-center gap-1.5">
             <Ruler className="w-3 h-3 text-brand" />
-            <span className="text-xs font-bold">{selectedCountry.dimensions}</span>
+            <span className="text-xs font-bold">{selectedFormat.dimensions}</span>
           </div>
         )}
       </motion.div>

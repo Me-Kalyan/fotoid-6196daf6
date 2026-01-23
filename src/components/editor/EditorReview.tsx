@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useCallback } from "react";
-import { ControlsPanel } from "./ControlsPanel";
+import { ControlsPanel, type PhotoFormat } from "./ControlsPanel";
 import { BrushCanvas } from "./BrushCanvas";
 import { CompliancePanel } from "./CompliancePanel";
 import { EditorToolbar } from "./EditorToolbar";
@@ -10,19 +10,18 @@ import { NeoButton } from "@/components/ui/neo-button";
 import { Download, ChevronRight, SplitSquareHorizontal, Paintbrush, Crop } from "lucide-react";
 import { useImageProcessingContext } from "@/contexts/ImageProcessingContext";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import type { CountryFormat } from "@/pages/Editor";
 
 interface EditorReviewProps {
-  selectedCountry: CountryFormat;
-  setSelectedCountry: (country: CountryFormat) => void;
-  bgColor: "white" | "grey" | "blue";
-  setBgColor: (color: "white" | "grey" | "blue") => void;
+  selectedFormat: PhotoFormat;
+  setSelectedFormat: (format: PhotoFormat) => void;
+  bgColor: "white" | "grey";
+  setBgColor: (color: "white" | "grey") => void;
   onProceedToDownload: () => void;
 }
 
 export const EditorReview = ({
-  selectedCountry,
-  setSelectedCountry,
+  selectedFormat,
+  setSelectedFormat,
   bgColor,
   setBgColor,
   onProceedToDownload,
@@ -39,7 +38,6 @@ export const EditorReview = ({
     redo,
     undoImageData,
     redoImageData,
-    clearUndoRedoData,
   } = useImageProcessingContext();
 
   const [showComparison, setShowComparison] = useState(false);
@@ -56,9 +54,9 @@ export const EditorReview = ({
     setShowCropAdjustment(false);
   }, []);
 
-  // Calculate aspect ratio from country dimensions
+  // Calculate aspect ratio from format dimensions
   const getAspectRatio = () => {
-    const dims = selectedCountry.dimensions.match(/(\d+)×(\d+)/);
+    const dims = selectedFormat.dimensions.match(/(\d+)×(\d+)/);
     if (dims) return parseInt(dims[1]) / parseInt(dims[2]);
     return 0.8; // default passport ratio
   };
@@ -87,8 +85,8 @@ export const EditorReview = ({
           className="w-full lg:w-72 border-b-3 lg:border-b-0 lg:border-r-3 border-primary bg-background p-4 lg:p-6"
         >
           <ControlsPanel
-            selectedCountry={selectedCountry}
-            setSelectedCountry={setSelectedCountry}
+            selectedFormat={selectedFormat}
+            setSelectedFormat={setSelectedFormat}
             bgColor={bgColor}
             setBgColor={setBgColor}
           />
@@ -140,7 +138,7 @@ export const EditorReview = ({
               className="w-full max-w-md overflow-hidden"
               style={{
                 aspectRatio: (() => {
-                  const dims = selectedCountry.dimensions.match(/(\d+)×(\d+)/);
+                  const dims = selectedFormat.dimensions.match(/(\d+)×(\d+)/);
                   if (dims) return `${dims[1]}/${dims[2]}`;
                   return "3/4";
                 })()
@@ -165,7 +163,7 @@ export const EditorReview = ({
               onPushHistory={handlePushHistory}
               undoImageData={undoImageData}
               redoImageData={redoImageData}
-              selectedCountry={selectedCountry}
+              selectedFormat={selectedFormat}
             />
           )}
         </motion.main>

@@ -20,13 +20,13 @@ import { useImageProcessingContext } from "@/contexts/ImageProcessingContext";
 import { generatePrintSheet, downloadSheet, type SheetSize } from "@/utils/printSheetGenerator";
 import { useDownloadHistory } from "@/hooks/useDownloadHistory";
 import { useToast } from "@/hooks/use-toast";
-import type { CountryFormat } from "@/pages/Editor";
+import type { PhotoFormat } from "@/components/editor/ControlsPanel";
 import { drawImageWithFaceCrop, getPassportSpec } from "@/hooks/useFaceCrop";
 import { logger } from "@/lib/logger";
 
 interface EditorDownloadProps {
-  selectedCountry: CountryFormat;
-  bgColor: "white" | "grey" | "blue";
+  selectedFormat: PhotoFormat;
+  bgColor: "white" | "grey";
   onBack: () => void;
 }
 
@@ -88,7 +88,6 @@ const outputOptions: OutputOption[] = [
 const bgColorHex = {
   white: "#FFFFFF",
   grey: "#E0E0E0",
-  blue: "#D6EAF8",
 };
 
 // Helper to parse dimension strings like "2×2 inches" or "35×45 mm" into inches
@@ -117,7 +116,7 @@ function parseDimensions(dimensions: string): { width: number; height: number } 
   return { width, height };
 }
 
-export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownloadProps) => {
+export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownloadProps) => {
   const [selectedOutput, setSelectedOutput] = useState<OutputFormat>("single");
   const [fileFormat, setFileFormat] = useState<FileFormat>("jpg");
   const [dpi, setDpi] = useState<number>(300);
@@ -136,8 +135,8 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
 
   const selectedOption = outputOptions.find(o => o.id === selectedOutput);
 
-  // Parse the selected country's dimensions
-  const photoDimensions = parseDimensions(selectedCountry.dimensions);
+  // Parse the selected format's dimensions
+  const photoDimensions = parseDimensions(selectedFormat.dimensions);
 
   const handleDownload = useCallback(async () => {
     if (!processedImage?.processedImage) return;
@@ -156,7 +155,7 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
 
     try {
       const timestamp = Date.now();
-      const countryCode = selectedCountry.code.toLowerCase();
+      const formatId = selectedFormat.id.toLowerCase();
 
       if (selectedOutput === "single") {
         // Download single photo with correct dimensions
@@ -184,7 +183,7 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
           ctx.fillRect(0, 0, targetWidthPx, targetHeightPx);
 
           // Use smart crop for final download
-          const spec = getPassportSpec(selectedCountry.code);
+          const spec = getPassportSpec(selectedFormat.id);
           drawImageWithFaceCrop(ctx, img, processedImage.faceLandmarks, targetWidthPx, targetHeightPx, spec);
 
           // Generate download
@@ -194,7 +193,7 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
 
           const link = document.createElement("a");
           link.href = dataUrl;
-          link.download = `passport-photo-${countryCode}-${timestamp}.${fileFormat}`;
+          link.download = `passport-photo-${formatId}-${timestamp}.${fileFormat}`;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -212,26 +211,26 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
           photoDimensions.width,
           photoDimensions.height,
           processedImage.faceLandmarks,
-          selectedCountry.code
+          selectedFormat.id
         );
 
-        const filename = `passport-sheet-${sheetSize}-${countryCode}-${timestamp}.${fileFormat}`;
+        const filename = `passport-sheet-${sheetSize}-${formatId}-${timestamp}.${fileFormat}`;
         downloadSheet(sheet.dataUrl, filename);
       }
 
       // Record the download
       recordDownload({
         photoType: selectedOption?.id || 'single',
-        countryCode: selectedCountry.code,
+        countryCode: selectedFormat.id,
         isPaid: false,
       });
 
       toast({
         title: "Download complete!",
-        description: `Your ${selectedOption?.title || 'photo'} (${selectedCountry.dimensions}) has been downloaded.`,
+        description: `Your ${selectedOption?.title || 'photo'} (${selectedFormat.dimensions}) has been downloaded.`,
       });
 
-      logger.log("Download complete:", { selectedOutput, fileFormat, selectedCountry, photoDimensions });
+      logger.log("Download complete:", { selectedOutput, fileFormat, selectedFormat, photoDimensions });
     } catch (error) {
       logger.error("Download failed:", error);
       toast({
@@ -242,7 +241,7 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
     } finally {
       setIsDownloading(false);
     }
-  }, [processedImage, selectedOutput, selectedOption, fileFormat, selectedCountry, bgColor, dpi, jpgQuality, canDownloadFree, recordDownload, toast, photoDimensions]);
+  }, [processedImage, selectedOutput, selectedOption, fileFormat, selectedFormat, bgColor, dpi, jpgQuality, canDownloadFree, recordDownload, toast, photoDimensions]);
 
   const getDpiLabel = (value: number) => {
     if (value <= 72) return "Web (72 DPI)";
@@ -274,7 +273,7 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
               Download Your Photo
             </h1>
             <p className="text-muted-foreground">
-              Choose your output format for your {selectedCountry.name} passport photo.
+              Choose your output format for your {selectedFormat.name} photo.
             </p>
           </motion.div>
 
@@ -544,7 +543,7 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
           <div className="flex-1 flex items-center justify-center">
             {selectedOutput === "single" ? (
               <motion.div
-                key={`single-${selectedCountry.dimensions}`}
+                key={`single-${selectedFormat.dimensions}`}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="border-3 border-primary shadow-brutal overflow-hidden flex flex-col items-center"
@@ -560,7 +559,7 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
                   }}
                 />
                 <div className="text-xs font-mono py-1 text-muted-foreground bg-background/50 w-full text-center border-t border-primary/20">
-                  {selectedCountry.dimensions}
+                  {selectedFormat.dimensions}
                 </div>
               </motion.div>
             ) : selectedOption?.sheetSize ? (
@@ -570,7 +569,7 @@ export const EditorDownload = ({ selectedCountry, bgColor, onBack }: EditorDownl
                 sheetSize={selectedOption.sheetSize}
                 bgColor={bgColorHex[bgColor]}
                 faceLandmarks={processedImage.faceLandmarks}
-                countryCode={selectedCountry.code}
+                countryCode={selectedFormat.id}
               />
             ) : null}
           </div>

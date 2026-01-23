@@ -1,152 +1,109 @@
 import { motion } from "framer-motion";
-import { Globe, Palette, ChevronDown, Maximize2 } from "lucide-react";
+import { Palette, ChevronDown, Maximize2 } from "lucide-react";
 import { useState } from "react";
-import type { CountryFormat } from "@/pages/Editor";
-import { countryRequirements } from "@/data/countries";
+import { photoSizes, type PhotoSize } from "@/data/photoSizes";
 
-interface ControlsPanelProps {
-  selectedCountry: CountryFormat;
-  setSelectedCountry: (country: CountryFormat) => void;
-  bgColor: "white" | "grey" | "blue";
-  setBgColor: (color: "white" | "grey" | "blue") => void;
+export interface PhotoFormat {
+  id: string;
+  name: string;
+  dimensions: string;
+  bgColor: "white" | "grey";
 }
 
-type FormatMode = "countries" | "custom";
+interface ControlsPanelProps {
+  selectedFormat: PhotoFormat;
+  setSelectedFormat: (format: PhotoFormat) => void;
+  bgColor: "white" | "grey";
+  setBgColor: (color: "white" | "grey") => void;
+}
 
-const countries: CountryFormat[] = countryRequirements.map(c => {
-  // Map background color string to our union type if possible
-  let initialBg: "white" | "grey" | "blue" = "white";
-  const bgLower = c.bgColor.toLowerCase();
-  if (bgLower.includes("grey") || bgLower.includes("gray")) initialBg = "grey";
-  if (bgLower.includes("blue")) initialBg = "blue";
-
-  return {
-    code: c.code,
-    name: c.name,
-    dimensions: c.dimensions,
-    bgColor: initialBg
-  };
-});
-
-// Custom photo sizes for print shops
-const customSizes: CountryFormat[] = [
-  { code: "MAXI", name: "Maxi Size", dimensions: "4×6 inches", bgColor: "white" },
-  { code: "WALLET", name: "Wallet Size", dimensions: "2.5×3.5 inches", bgColor: "white" },
-  { code: "STAMP", name: "Stamp Size", dimensions: "1×1 inch", bgColor: "white" },
-  { code: "MINI", name: "Mini Square", dimensions: "1.5×1.5 inches", bgColor: "white" },
-  { code: "STANDARD", name: "Standard", dimensions: "2×2 inches", bgColor: "white" },
-  { code: "VISA", name: "Visa Size", dimensions: "2×2.5 inches", bgColor: "white" },
-];
+// Convert PhotoSize to PhotoFormat
+const photoFormats: PhotoFormat[] = photoSizes.map((size) => ({
+  id: size.id,
+  name: size.name,
+  dimensions: size.dimensions,
+  bgColor: "white" as const,
+}));
 
 const bgColors = [
   { id: "white" as const, label: "White", color: "#FFFFFF", border: true },
   { id: "grey" as const, label: "Light Grey", color: "#E0E0E0", border: false },
-  { id: "blue" as const, label: "Light Blue", color: "#D6EAF8", border: false },
 ];
 
 export const ControlsPanel = ({
-  selectedCountry,
-  setSelectedCountry,
+  selectedFormat,
+  setSelectedFormat,
   bgColor,
   setBgColor,
 }: ControlsPanelProps) => {
-  const [isCountryOpen, setIsCountryOpen] = useState(false);
-  const [formatMode, setFormatMode] = useState<FormatMode>("countries");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  const currentList = formatMode === "countries" ? countries : customSizes;
+  // Find the matching photo size for description
+  const selectedPhotoSize = photoSizes.find((s) => s.id === selectedFormat.id);
 
   return (
     <div className="space-y-6">
       <h2 className="font-heading font-bold text-lg flex items-center gap-2">
-        <Globe className="w-5 h-5 text-brand" />
+        <Maximize2 className="w-5 h-5 text-brand" />
         Photo Settings
       </h2>
 
-      {/* Format Mode Toggle */}
+      {/* Photo Size Selector */}
       <div>
-        <label className="block text-sm font-bold mb-2">Format Type</label>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => setFormatMode("countries")}
-            className={`p-3 border-3 transition-all text-center ${formatMode === "countries"
-                ? "border-brand bg-brand/10 shadow-brutal"
-                : "border-primary hover:shadow-brutal-hover"
-              }`}
-          >
-            <Globe className="w-5 h-5 mx-auto mb-1" />
-            <span className="text-xs font-bold">Countries</span>
-          </button>
-          <button
-            onClick={() => setFormatMode("custom")}
-            className={`p-3 border-3 transition-all text-center ${formatMode === "custom"
-                ? "border-brand bg-brand/10 shadow-brutal"
-                : "border-primary hover:shadow-brutal-hover"
-              }`}
-          >
-            <Maximize2 className="w-5 h-5 mx-auto mb-1" />
-            <span className="text-xs font-bold">Custom Sizes</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Country/Size Selector */}
-      <div>
-        <label className="block text-sm font-bold mb-2">
-          {formatMode === "countries" ? "Country Format" : "Photo Size"}
-        </label>
+        <label className="block text-sm font-bold mb-2">Photo Size</label>
         <div className="relative">
           <button
-            onClick={() => setIsCountryOpen(!isCountryOpen)}
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="w-full border-3 border-primary bg-background p-3 flex items-center justify-between shadow-brutal hover:shadow-brutal-hover transition-shadow"
           >
             <div className="flex items-center gap-2">
-              {formatMode === "countries" ? (
-                <span className="text-xl">{getFlag(selectedCountry.code)}</span>
-              ) : (
-                <span className="text-xl">📐</span>
-              )}
+              <span className="text-xl">📐</span>
               <div className="text-left">
-                <div className="font-bold">{selectedCountry.name}</div>
+                <div className="font-bold">{selectedFormat.name}</div>
                 <div className="text-xs text-muted-foreground">
-                  {selectedCountry.dimensions}
+                  {selectedFormat.dimensions}
                 </div>
               </div>
             </div>
             <ChevronDown
-              className={`w-5 h-5 transition-transform ${isCountryOpen ? "rotate-180" : ""}`}
+              className={`w-5 h-5 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
             />
           </button>
 
-          {isCountryOpen && (
+          {isDropdownOpen && (
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className="absolute top-full left-0 right-0 z-50 mt-1 border-3 border-primary bg-background shadow-brutal-lg max-h-64 overflow-y-auto"
             >
-              {currentList.map((item) => (
-                <button
-                  key={item.code}
-                  onClick={() => {
-                    setSelectedCountry(item);
-                    setBgColor(item.bgColor);
-                    setIsCountryOpen(false);
-                  }}
-                  className={`w-full p-3 flex items-center gap-2 hover:bg-secondary transition-colors text-left ${selectedCountry.code === item.code ? "bg-highlight/20" : ""
+              {photoFormats.map((format) => {
+                const sizeInfo = photoSizes.find((s) => s.id === format.id);
+                return (
+                  <button
+                    key={format.id}
+                    onClick={() => {
+                      setSelectedFormat(format);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full p-3 flex items-center gap-2 hover:bg-secondary transition-colors text-left ${
+                      selectedFormat.id === format.id ? "bg-highlight/20" : ""
                     }`}
-                >
-                  {formatMode === "countries" ? (
-                    <span className="text-xl">{getFlag(item.code)}</span>
-                  ) : (
+                  >
                     <span className="text-xl">📐</span>
-                  )}
-                  <div>
-                    <div className="font-bold">{item.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {item.dimensions}
+                    <div className="flex-1">
+                      <div className="font-bold">{format.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {format.dimensions}
+                        {sizeInfo?.description && (
+                          <span className="ml-2 text-brand">
+                            • {sizeInfo.description}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </motion.div>
           )}
         </div>
@@ -158,15 +115,16 @@ export const ControlsPanel = ({
           <Palette className="w-4 h-4" />
           Background Color
         </label>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           {bgColors.map((color) => (
             <button
               key={color.id}
               onClick={() => setBgColor(color.id)}
-              className={`p-3 border-3 transition-all ${bgColor === color.id
+              className={`p-3 border-3 transition-all ${
+                bgColor === color.id
                   ? "border-brand shadow-brutal"
                   : "border-primary hover:shadow-brutal-hover"
-                }`}
+              }`}
             >
               <div
                 className={`w-full h-8 mb-1 ${color.border ? "border border-secondary" : ""}`}
@@ -180,22 +138,16 @@ export const ControlsPanel = ({
 
       {/* Photo Info */}
       <div className="p-4 border-2 border-dashed border-primary bg-secondary/30">
-        <h3 className="font-bold text-sm mb-2">
-          {formatMode === "countries" ? "Requirements" : "Size Info"}
-        </h3>
+        <h3 className="font-bold text-sm mb-2">Size Info</h3>
         <ul className="text-xs text-muted-foreground space-y-1">
-          <li>• Size: {selectedCountry.dimensions}</li>
+          <li>• Size: {selectedFormat.dimensions}</li>
+          {selectedPhotoSize?.description && (
+            <li>• {selectedPhotoSize.description}</li>
+          )}
           <li>• Head must be 50-69% of frame height</li>
           <li>• Eyes level and centered</li>
-          <li>• Neutral expression, mouth closed</li>
         </ul>
       </div>
     </div>
   );
 };
-
-// Helper function to get country flag emoji
-function getFlag(countryCode: string): string {
-  const country = countryRequirements.find(c => c.code === countryCode);
-  return country?.flag || "🏳️";
-}

@@ -1,5 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { EditorUpload } from "@/components/editor/EditorUpload";
 import { EditorProcessing } from "@/components/editor/EditorProcessing";
@@ -10,51 +9,25 @@ import { AuthGate } from "@/components/editor/AuthGate";
 import { ImageProcessingProvider, useImageProcessingContext } from "@/contexts/ImageProcessingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton";
-import { countryRequirements } from "@/data/countries";
+import { photoSizes } from "@/data/photoSizes";
+import type { PhotoFormat } from "@/components/editor/ControlsPanel";
 
 export type EditorState = "upload" | "processing" | "review" | "download";
 
-export type CountryFormat = {
-  code: string;
-  name: string;
-  dimensions: string;
-  bgColor: "white" | "grey" | "blue";
-};
-
 const EditorContent = () => {
-  const location = useLocation();
   const [editorState, setEditorState] = useState<EditorState>("upload");
-  const [selectedCountry, setSelectedCountry] = useState<CountryFormat>({
-    code: "US",
-    name: "United States",
-    dimensions: "2×2 inches",
+  
+  // Default to standard passport size (35x45mm)
+  const defaultSize = photoSizes.find((s) => s.id === "35x45") || photoSizes[0];
+  const [selectedFormat, setSelectedFormat] = useState<PhotoFormat>({
+    id: defaultSize.id,
+    name: defaultSize.name,
+    dimensions: defaultSize.dimensions,
     bgColor: "white",
   });
-  const [bgColor, setBgColor] = useState<"white" | "grey" | "blue">("white");
+  const [bgColor, setBgColor] = useState<"white" | "grey">("white");
 
-  const { processImage, reset, processedImage, error } = useImageProcessingContext();
-
-  useEffect(() => {
-    const state = location.state as { countryCode?: string };
-    if (state?.countryCode) {
-      const country = countryRequirements.find(c => c.code === state.countryCode);
-      if (country) {
-        // Map background color string to our union type if possible
-        let initialBg: "white" | "grey" | "blue" = "white";
-        const bgLower = country.bgColor.toLowerCase();
-        if (bgLower.includes("grey") || bgLower.includes("gray")) initialBg = "grey";
-        if (bgLower.includes("blue")) initialBg = "blue";
-
-        setSelectedCountry({
-          code: country.code,
-          name: country.name,
-          dimensions: country.dimensions,
-          bgColor: initialBg
-        });
-        setBgColor(initialBg);
-      }
-    }
-  }, [location.state]);
+  const { processImage, reset, error } = useImageProcessingContext();
 
   const handleFileSelect = useCallback(async (file: File) => {
     setEditorState("processing");
@@ -124,8 +97,8 @@ const EditorContent = () => {
               className="flex-1"
             >
               <EditorReview
-                selectedCountry={selectedCountry}
-                setSelectedCountry={setSelectedCountry}
+                selectedFormat={selectedFormat}
+                setSelectedFormat={setSelectedFormat}
                 bgColor={bgColor}
                 setBgColor={setBgColor}
                 onProceedToDownload={handleProceedToDownload}
@@ -142,7 +115,7 @@ const EditorContent = () => {
               className="flex-1"
             >
               <EditorDownload
-                selectedCountry={selectedCountry}
+                selectedFormat={selectedFormat}
                 bgColor={bgColor}
                 onBack={handleBackToReview}
               />
