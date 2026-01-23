@@ -21,7 +21,6 @@ import { generatePrintSheet, downloadSheet, calculatePhotoCount, type SheetSize 
 import { useDownloadHistory } from "@/hooks/useDownloadHistory";
 import { useToast } from "@/hooks/use-toast";
 import type { PhotoFormat } from "@/components/editor/ControlsPanel";
-import { drawImageWithFaceCrop, getPassportSpec } from "@/hooks/useFaceCrop";
 import { logger } from "@/lib/logger";
 
 interface EditorDownloadProps {
@@ -152,7 +151,7 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
   const [jpgQuality, setJpgQuality] = useState<JpgQuality>(90);
   const [isDownloading, setIsDownloading] = useState(false);
 
-  const { processedImage } = useImageProcessingContext();
+  const { processedImage, savedCanvasState } = useImageProcessingContext();
   const {
     freeDownloadsRemaining,
     canDownloadFree,
@@ -161,6 +160,9 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
     isProActive,
   } = useDownloadHistory();
   const { toast } = useToast();
+
+  // Use saved canvas state if available (user's edited image), otherwise fall back to processed image
+  const photoSourceUrl = savedCanvasState?.dataUrl || processedImage?.processedImage;
 
   const selectedOption = outputOptions.find(o => o.id === selectedOutput);
 
@@ -180,7 +182,7 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
   }, [selectedOutput, selectedOption?.sheetSize, photoDimensions.width, photoDimensions.height]);
 
   const handleDownload = useCallback(async () => {
-    if (!processedImage?.processedImage) return;
+    if (!photoSourceUrl) return;
 
     // Check if user can download for free
     if (!canDownloadFree) {
@@ -199,14 +201,14 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
       const formatId = selectedFormat.id.toLowerCase();
 
       if (selectedOutput === "single") {
-        // Download single photo with correct dimensions
-        // Create a canvas to resize the photo to the correct physical size
+        // Download single photo - use the saved canvas state directly
+        // since it already has the correct cropping and positioning
         const img = new Image();
         img.crossOrigin = "anonymous";
         await new Promise<void>((resolve, reject) => {
           img.onload = () => resolve();
           img.onerror = reject;
-          img.src = processedImage.processedImage;
+          img.src = photoSourceUrl;
         });
 
         // Calculate pixel dimensions based on DPI and photo size
@@ -223,16 +225,9 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
           ctx.fillStyle = bgColorHex[bgColor];
           ctx.fillRect(0, 0, targetWidthPx, targetHeightPx);
 
-          // Use the same face-aware crop as the preview canvas
-          const spec = getPassportSpec(formatId);
-          drawImageWithFaceCrop(
-            ctx,
-            img,
-            processedImage.faceLandmarks,
-            targetWidthPx,
-            targetHeightPx,
-            spec
-          );
+          // Draw the image - if we have saved canvas state, it's already properly cropped
+          // Just scale it to the target dimensions
+          ctx.drawImage(img, 0, 0, targetWidthPx, targetHeightPx);
 
           // Generate download
           const mimeType = fileFormat === 'png' ? 'image/png' : 'image/jpeg';
@@ -247,12 +242,12 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
           document.body.removeChild(link);
         }
       } else {
-        // Generate and download print sheet with correct photo dimensions
+        // Generate and download print sheet using the saved canvas state
         const sheetSize = selectedOption?.sheetSize;
         if (!sheetSize) return;
 
         const sheet = await generatePrintSheet(
-          processedImage.processedImage,
+          photoSourceUrl,
           sheetSize,
           bgColorHex[bgColor],
           dpi,
@@ -276,7 +271,7 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
         description: `Your ${selectedOption?.title || 'photo'} (${selectedFormat.dimensions}) has been downloaded.`,
       });
 
-      logger.log("Download complete:", { selectedOutput, fileFormat, selectedFormat, photoDimensions });
+      logger.log("Download complete:", { selectedOutput, fileFormat, selectedFormat, photoDimensions, usedSavedCanvas: !!savedCanvasState });
     } catch (error) {
       logger.error("Download failed:", error);
       toast({
@@ -287,7 +282,7 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
     } finally {
       setIsDownloading(false);
     }
-  }, [processedImage, selectedOutput, selectedOption, fileFormat, selectedFormat, bgColor, dpi, jpgQuality, canDownloadFree, recordDownload, toast, photoDimensions]);
+  }, [photoSourceUrl, selectedOutput, selectedOption, fileFormat, selectedFormat, bgColor, dpi, jpgQuality, canDownloadFree, recordDownload, toast, photoDimensions, savedCanvasState]);
 
   const getDpiLabel = (value: number) => {
     if (value <= 72) return "Web (72 DPI)";
@@ -615,20 +610,20 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
       >
         <h2 className="font-heading font-bold text-lg mb-4">Preview</h2>
 
-        {processedImage?.processedImage ? (
+        {photoSourceUrl ? (
           <div className="flex-1 flex items-center justify-center">
             {selectedOutput === "single" ? (
               <motion.div
-                key={`single-${selectedFormat.dimensions}`}
+                key={`single-${selectedFormat.dimensions}-${savedCanvasState ? 'edited' : 'original'}`}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="border-3 border-primary shadow-brutal overflow-hidden flex flex-col items-center"
                 style={{ backgroundColor: bgColorHex[bgColor] }}
               >
                 <img
-                  src={processedImage.processedImage}
+                  src={photoSourceUrl}
                   alt="Processed passport photo"
-                  className="object-cover"
+                  className="object-contain"
                   style={{
                     width: photoDimensions.width >= photoDimensions.height ? '200px' : `${200 * (photoDimensions.width / photoDimensions.height)}px`,
                     height: photoDimensions.height >= photoDimensions.width ? '200px' : `${200 * (photoDimensions.height / photoDimensions.width)}px`,
@@ -640,8 +635,8 @@ export const EditorDownload = ({ selectedFormat, bgColor, onBack }: EditorDownlo
               </motion.div>
             ) : selectedOption?.sheetSize ? (
               <PrintSheetPreview
-                key={`${selectedOption.sheetSize}-${selectedFormat.id}`}
-                photoUrl={processedImage.processedImage}
+                key={`${selectedOption.sheetSize}-${selectedFormat.id}-${savedCanvasState ? 'edited' : 'original'}`}
+                photoUrl={photoSourceUrl}
                 sheetSize={selectedOption.sheetSize}
                 bgColor={bgColorHex[bgColor]}
                 photoWidthInches={photoDimensions.width}
