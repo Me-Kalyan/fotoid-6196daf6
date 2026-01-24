@@ -239,6 +239,17 @@ const Editor = () => {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+
+          {/* Upgrade Button - shows when free downloads exhausted */}
+          {!isProActive && freeDownloadsRemaining === 0 && (
+            <Link to="/subscription">
+              <NeoButton size="sm" variant="default" className="gap-1.5">
+                <Crown className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Upgrade</span>
+              </NeoButton>
+            </Link>
+          )}
+
           <div className="flex items-center gap-2">
             <span className="font-heading font-black text-lg text-brand">FOTOID</span>
             <span className="font-heading font-bold text-sm text-muted-foreground">STUDIO</span>
