@@ -29,6 +29,7 @@ interface BrushCanvasProps {
   selectedFormat?: PhotoFormat;
   savedCanvasState?: SavedCanvasState | null;
   onSaveCanvasState?: (dataUrl: string, width: number, height: number, formatId: string) => void;
+  onMarkAsModified?: () => void;
 }
 
 const bgColorMap = {
@@ -51,6 +52,7 @@ export const BrushCanvas = ({
   selectedFormat,
   savedCanvasState,
   onSaveCanvasState,
+  onMarkAsModified,
 }: BrushCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const maskCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -353,7 +355,12 @@ export const BrushCanvas = ({
 
     // Composite: redraw canvas based on mask
     compositeImages();
-  }, [activeTool, brushSize, compositeImages]);
+    
+    // Mark as modified for unsaved changes indicator
+    if (onMarkAsModified) {
+      onMarkAsModified();
+    }
+  }, [activeTool, brushSize, compositeImages, onMarkAsModified]);
 
   // Calculate distance between two touch points
   const getTouchDistance = (touches: React.TouchList): number => {

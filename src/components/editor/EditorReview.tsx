@@ -43,6 +43,8 @@ export const EditorReview = ({
     redoImageData,
     savedCanvasState,
     saveCanvasState,
+    hasUnsavedChanges,
+    markAsModified,
   } = useImageProcessingContext();
 
   const { toast } = useToast();
@@ -220,6 +222,7 @@ export const EditorReview = ({
               selectedFormat={selectedFormat}
               savedCanvasState={savedCanvasState}
               onSaveCanvasState={saveCanvasState}
+              onMarkAsModified={markAsModified}
             />
           )}
         </motion.main>
