@@ -242,7 +242,7 @@ const Editor = () => {
 
           {/* Upgrade Button - shows when free downloads exhausted */}
           {!isProActive && freeDownloadsRemaining === 0 && (
-            <Link to="/subscription">
+            <Link to="/subscription" className="animate-pulse">
               <NeoButton size="sm" variant="default" className="gap-1.5">
                 <Crown className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Upgrade</span>
