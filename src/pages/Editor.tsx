@@ -4,7 +4,8 @@ import { NeoButton } from "@/components/ui/neo-button";
 import { processImage } from "@/lib/process-image";
 import { photoPresets, paperSizes, type PaperSize } from "@/lib/sizes";
 import { getCroppedImg, generateSheet } from "@/lib/canvasUtils";
-import { Loader2, ArrowLeft, Upload, Settings2, Printer, Download, RotateCcw, RotateCw } from "lucide-react";
+import { Loader2, ArrowLeft, Upload, Settings2, Printer, Download, RotateCcw, RotateCw, Crown } from "lucide-react";
+import { NeoBadge } from "@/components/ui/neo-badge";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -210,9 +211,24 @@ const Editor = () => {
           <ArrowLeft className="w-4 h-4" />
           <span className="font-heading font-bold text-sm">HOME</span>
         </Link>
-        <div className="flex items-center gap-2">
-          <span className="font-heading font-black text-lg text-brand">FOTOID</span>
-          <span className="font-heading font-bold text-sm text-muted-foreground">STUDIO</span>
+        <div className="flex items-center gap-3">
+          {/* Download Status Indicator */}
+          {isProActive ? (
+            <NeoBadge variant="brand" icon={<Crown className="w-3.5 h-3.5" />}>
+              Pro
+            </NeoBadge>
+          ) : (
+            <NeoBadge 
+              variant={freeDownloadsRemaining > 0 ? "highlight" : "muted"}
+              icon={<Download className="w-3.5 h-3.5" />}
+            >
+              {freeDownloadsRemaining}/2 Free
+            </NeoBadge>
+          )}
+          <div className="flex items-center gap-2">
+            <span className="font-heading font-black text-lg text-brand">FOTOID</span>
+            <span className="font-heading font-bold text-sm text-muted-foreground">STUDIO</span>
+          </div>
         </div>
       </header>
 
