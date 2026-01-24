@@ -213,7 +213,7 @@ const Editor = () => {
           <span className="font-heading font-bold text-sm">HOME</span>
         </Link>
         <div className="flex items-center gap-3">
-          {/* Download Status Indicator */}
+          {/* Download Status Indicator with Progress */}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -222,12 +222,24 @@ const Editor = () => {
                     Pro
                   </NeoBadge>
                 ) : (
-                  <NeoBadge 
-                    variant={freeDownloadsRemaining > 0 ? "highlight" : "muted"}
-                    icon={<Download className="w-3.5 h-3.5" />}
-                  >
-                    {freeDownloadsRemaining}/2 Free
-                  </NeoBadge>
+                  <div className="flex flex-col items-end gap-1">
+                    <NeoBadge 
+                      variant={freeDownloadsRemaining > 0 ? "highlight" : "muted"}
+                      icon={<Download className="w-3.5 h-3.5" />}
+                    >
+                      {freeDownloadsRemaining}/2 Free
+                    </NeoBadge>
+                    {/* Progress Bar */}
+                    <div className="w-full h-1.5 bg-muted border border-primary rounded-none overflow-hidden">
+                      <div 
+                        className={cn(
+                          "h-full transition-all duration-300",
+                          freeDownloadsRemaining > 0 ? "bg-brand" : "bg-muted-foreground"
+                        )}
+                        style={{ width: `${(freeDownloadsRemaining / 2) * 100}%` }}
+                      />
+                    </div>
+                  </div>
                 )}
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-[200px] text-center">
