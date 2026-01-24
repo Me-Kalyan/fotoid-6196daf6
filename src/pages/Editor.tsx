@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Cropper, { Area, Point } from "react-easy-crop";
 import { NeoButton } from "@/components/ui/neo-button";
 import { processImage } from "@/lib/process-image";
@@ -7,8 +7,24 @@ import { getCroppedImg, generateSheet } from "@/lib/canvasUtils";
 import { Loader2, ArrowLeft, Upload, Settings2, Printer, Download, RotateCcw, RotateCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { AuthGate } from "@/components/editor/AuthGate";
+import { useDownloadHistory } from "@/hooks/useDownloadHistory";
+import { useRazorpay } from "@/hooks/useRazorpay";
+import { useToast } from "@/hooks/use-toast";
 
 const Editor = () => {
+  const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
+  const { 
+    canDownloadFree, 
+    freeDownloadsRemaining, 
+    isProActive,
+    recordDownload,
+    isRecording 
+  } = useDownloadHistory();
+  const { initiatePayment, isLoading: isPaymentLoading } = useRazorpay();
+
   // --- STATE ---
   const [image, setImage] = useState<string | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
@@ -30,11 +46,22 @@ const Editor = () => {
   const [sheetResult, setSheetResult] = useState<string | null>(null);
   const [selectedPaper, setSelectedPaper] = useState<PaperSize>(paperSizes[0]);
 
+  // Clean up memory on unmount
+  useEffect(() => {
+    return () => {
+      if (image) URL.revokeObjectURL(image);
+    };
+  }, [image]);
+
   // --- ACTIONS ---
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    
+    // Memory Cleanup
+    if (image) URL.revokeObjectURL(image);
+    
     const url = URL.createObjectURL(file);
     setImage(url);
     setIsProcessing(true);
@@ -98,6 +125,82 @@ const Editor = () => {
     setCroppedAreaPixels(croppedPixels);
   };
 
+  // Reset all crop parameters together
+  const handleResetAll = () => {
+    setRotation(0);
+    setZoom(1);
+    setCrop({ x: 0, y: 0 });
+  };
+
+  // --- DOWNLOAD WITH PAYMENT GATE ---
+  const triggerDownload = (url: string, filename: string) => {
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleDownload = async (fileUrl: string, fileName: string, photoType: 'single' | 'sheet') => {
+    // Case 1: Pro user - unlimited downloads
+    if (isProActive) {
+      triggerDownload(fileUrl, fileName);
+      recordDownload({ photoType, isPaid: false });
+      toast({
+        title: "Download Started!",
+        description: "Enjoy your Pro benefits 🎉",
+      });
+      return;
+    }
+
+    // Case 2: Free downloads remaining
+    if (canDownloadFree) {
+      triggerDownload(fileUrl, fileName);
+      recordDownload({ photoType, isPaid: false });
+      const remaining = freeDownloadsRemaining - 1;
+      toast({
+        title: "Download Started!",
+        description: remaining > 0 
+          ? `${remaining} free download${remaining !== 1 ? 's' : ''} remaining`
+          : "This was your last free download. Upgrade to Pro for unlimited!",
+      });
+      return;
+    }
+
+    // Case 3: Limit reached - trigger payment
+    toast({
+      title: "Free limit reached",
+      description: "Complete payment to download your photo",
+    });
+    
+    const success = await initiatePayment("single");
+    if (success) {
+      triggerDownload(fileUrl, fileName);
+      recordDownload({ photoType, isPaid: true });
+      toast({
+        title: "Payment successful!",
+        description: "Your download has started",
+      });
+    }
+  };
+
+  const isDownloading = isPaymentLoading || isRecording;
+
+  // --- AUTH LOADING STATE ---
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-brand" />
+      </div>
+    );
+  }
+
+  // --- AUTH GATE ---
+  if (!user) {
+    return <AuthGate message="Sign in to create your passport photo" />;
+  }
+
   // --- RENDER ---
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -113,13 +216,13 @@ const Editor = () => {
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col lg:flex-row">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* LEFT PANEL: CANVAS */}
-        <div className="flex-1 flex items-center justify-center p-4 bg-muted/30">
+        <div className="flex-1 flex items-center justify-center p-4 bg-muted/30 overflow-auto">
           {/* VIEW 1: EDITOR */}
           <div className={cn("w-full h-full", view !== "edit" && "hidden")}>
             {!image && (
-              <label className="flex flex-col items-center justify-center h-full min-h-[400px] border-3 border-dashed border-primary bg-card hover:bg-secondary/50 transition-colors cursor-pointer">
+              <label className="flex flex-col items-center justify-center h-[50vh] min-h-[300px] max-h-[500px] border-3 border-dashed border-primary bg-card hover:bg-secondary/50 transition-colors cursor-pointer">
                 <Upload className="w-16 h-16 text-brand mb-4" />
                 <input
                   type="file"
@@ -132,14 +235,14 @@ const Editor = () => {
             )}
 
             {isProcessing && (
-              <div className="flex flex-col items-center justify-center h-full min-h-[400px]">
+              <div className="flex flex-col items-center justify-center h-[50vh] min-h-[300px] max-h-[500px]">
                 <Loader2 className="w-12 h-12 animate-spin text-brand mb-4" />
                 <p className="font-heading font-bold">AI PROCESSING...</p>
               </div>
             )}
 
             {processedImage && !isProcessing && (
-              <div className="relative w-full h-full min-h-[400px] bg-muted">
+              <div className="relative w-full h-[50vh] min-h-[300px] max-h-[500px] bg-muted">
                 <Cropper
                   image={processedImage}
                   crop={crop}
@@ -164,11 +267,11 @@ const Editor = () => {
           {/* VIEW 2: PREVIEW */}
           <div className={cn("w-full h-full flex items-center justify-center", view !== "preview" && "hidden")}>
             {sheetResult && (
-              <div className="relative max-w-full max-h-[600px]">
+              <div className="relative max-w-full max-h-[60vh]">
                 <img
                   src={sheetResult}
                   alt="Generated sheet"
-                  className="max-w-full max-h-[600px] object-contain border-3 border-primary shadow-neo"
+                  className="max-w-full max-h-[60vh] object-contain border-3 border-primary shadow-neo"
                 />
                 <div className="absolute top-2 left-2 bg-brand text-brand-foreground px-2 py-1 font-heading font-bold text-xs">
                   PREVIEW
@@ -241,10 +344,10 @@ const Editor = () => {
                       ROTATION ({rotation}°)
                     </span>
                     <button
-                      onClick={() => setRotation(0)}
+                      onClick={handleResetAll}
                       className="text-brand text-xs font-bold hover:underline"
                     >
-                      RESET
+                      RESET ALL
                     </button>
                   </div>
                   <input
@@ -329,29 +432,42 @@ const Editor = () => {
 
             <hr className="border-primary my-4" />
 
-            {/* Download Actions */}
+            {/* Download Actions - WITH PAYMENT GATE */}
             <div className="space-y-2">
-              <a
-                href={sheetResult || "#"}
-                download={`fotoid-sheet-${selectedPaper.label.replace(/\s+/g, "-")}.jpg`}
-                className="block"
+              <NeoButton 
+                onClick={() => handleDownload(
+                  sheetResult!, 
+                  `fotoid-sheet-${selectedPaper.label.replace(/\s+/g, "-")}.jpg`,
+                  'sheet'
+                )}
+                className="w-full flex items-center justify-center gap-2"
+                disabled={isDownloading || !sheetResult}
               >
-                <NeoButton className="w-full flex items-center justify-center gap-2">
+                {isDownloading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
                   <Download className="w-4 h-4" />
-                  DOWNLOAD SHEET
-                </NeoButton>
-              </a>
+                )}
+                DOWNLOAD SHEET
+              </NeoButton>
 
-              <a
-                href={singleResult || "#"}
-                download={`fotoid-single-${width}x${height}mm.png`}
-                className="block"
+              <NeoButton 
+                variant="secondary" 
+                onClick={() => handleDownload(
+                  singleResult!, 
+                  `fotoid-single-${width}x${height}mm.png`,
+                  'single'
+                )}
+                className="w-full flex items-center justify-center gap-2"
+                disabled={isDownloading || !singleResult}
               >
-                <NeoButton variant="secondary" className="w-full flex items-center justify-center gap-2">
+                {isDownloading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
                   <Download className="w-4 h-4" />
-                  DOWNLOAD SINGLE PHOTO
-                </NeoButton>
-              </a>
+                )}
+                DOWNLOAD SINGLE PHOTO
+              </NeoButton>
 
               <button
                 onClick={() => setView("edit")}
