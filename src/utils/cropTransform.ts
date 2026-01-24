@@ -1,87 +1,138 @@
 /**
- * Apply crop transformation (position, scale, rotation) to an image
- * Returns a new data URL with the transformed image
+ * Apply crop transformation using pixel-based cropping from react-easy-crop
+ * Returns a new data URL with the cropped image
  */
 
-export interface CropTransformData {
-  x: number;
-  y: number;
-  scale: number;
-  rotation: number;
+export interface PixelCrop {
+  x: number;      // top-left x in source image
+  y: number;      // top-left y in source image
+  width: number;  // crop width in source pixels
+  height: number; // crop height in source pixels
 }
 
 export interface CropTransformOptions {
   imageUrl: string;
-  cropData: CropTransformData;
+  pixelCrop: PixelCrop;
+  rotation?: number;
   outputWidth: number;
   outputHeight: number;
   backgroundColor?: string;
 }
 
 /**
- * Apply crop transformation to an image and return the cropped result
+ * Create an image element from a URL
+ */
+function createImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = (error) => reject(error);
+    img.src = url;
+  });
+}
+
+/**
+ * Get the rotated bounding box size
+ */
+function getRotatedSize(width: number, height: number, rotation: number): { width: number; height: number } {
+  const rotRad = (rotation * Math.PI) / 180;
+  return {
+    width: Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
+    height: Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
+  };
+}
+
+/**
+ * Apply crop transformation using pixel coordinates from react-easy-crop
  */
 export async function applyCropTransform({
   imageUrl,
-  cropData,
+  pixelCrop,
+  rotation = 0,
   outputWidth,
   outputHeight,
   backgroundColor = "#FFFFFF",
 }: CropTransformOptions): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
+  const image = await createImage(imageUrl);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
 
-    img.onload = () => {
-      try {
-        // Create canvas with output dimensions
-        const canvas = document.createElement("canvas");
-        canvas.width = outputWidth;
-        canvas.height = outputHeight;
-        const ctx = canvas.getContext("2d");
+  if (!ctx) {
+    throw new Error("Could not get canvas context");
+  }
 
-        if (!ctx) {
-          reject(new Error("Could not get canvas context"));
-          return;
-        }
+  // If there's rotation, we need to handle it differently
+  if (rotation !== 0) {
+    const rotRad = (rotation * Math.PI) / 180;
 
-        // Fill background
-        ctx.fillStyle = backgroundColor;
-        ctx.fillRect(0, 0, outputWidth, outputHeight);
+    // Calculate bounding box of the rotated image
+    const { width: bBoxWidth, height: bBoxHeight } = getRotatedSize(
+      image.width,
+      image.height,
+      rotation
+    );
 
-        // Save context state
-        ctx.save();
+    // Create a temp canvas to draw rotated image
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = bBoxWidth;
+    tempCanvas.height = bBoxHeight;
+    const tempCtx = tempCanvas.getContext("2d");
 
-        // Move to center of canvas
-        ctx.translate(outputWidth / 2, outputHeight / 2);
+    if (!tempCtx) {
+      throw new Error("Could not get temp canvas context");
+    }
 
-        // Apply rotation (in degrees, convert to radians)
-        ctx.rotate((cropData.rotation * Math.PI) / 180);
+    // Fill with background color
+    tempCtx.fillStyle = backgroundColor;
+    tempCtx.fillRect(0, 0, bBoxWidth, bBoxHeight);
 
-        // Apply scale
-        ctx.scale(cropData.scale, cropData.scale);
+    // Draw rotated image
+    tempCtx.translate(bBoxWidth / 2, bBoxHeight / 2);
+    tempCtx.rotate(rotRad);
+    tempCtx.translate(-image.width / 2, -image.height / 2);
+    tempCtx.drawImage(image, 0, 0);
 
-        // Apply position offset (the cropData.x/y are pixel offsets from the preview container)
-        // We need to scale these relative to the output size
-        const scaleRatio = outputWidth / 280; // 280 is the preview container width
-        ctx.translate(cropData.x * scaleRatio / cropData.scale, cropData.y * scaleRatio / cropData.scale);
+    // Now crop from the rotated image
+    canvas.width = outputWidth;
+    canvas.height = outputHeight;
 
-        // Draw image centered
-        ctx.drawImage(img, -img.width / 2, -img.height / 2);
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, outputWidth, outputHeight);
 
-        // Restore context
-        ctx.restore();
+    ctx.drawImage(
+      tempCanvas,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      outputWidth,
+      outputHeight
+    );
+  } else {
+    // No rotation - simple crop
+    canvas.width = outputWidth;
+    canvas.height = outputHeight;
 
-        // Return as data URL
-        resolve(canvas.toDataURL("image/png"));
-      } catch (err) {
-        reject(err);
-      }
-    };
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, outputWidth, outputHeight);
 
-    img.onerror = () => reject(new Error("Failed to load image"));
-    img.src = imageUrl;
-  });
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      outputWidth,
+      outputHeight
+    );
+  }
+
+  return canvas.toDataURL("image/png");
 }
 
 /**
