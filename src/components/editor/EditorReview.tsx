@@ -10,7 +10,7 @@ import { NeoButton } from "@/components/ui/neo-button";
 import { Download, ChevronRight, SplitSquareHorizontal, Paintbrush, Crop, Loader2 } from "lucide-react";
 import { useImageProcessingContext } from "@/contexts/ImageProcessingContext";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { applyCropTransform } from "@/utils/cropTransform";
+import { applyCropTransform, type PixelCrop } from "@/utils/cropTransform";
 import { useToast } from "@/hooks/use-toast";
 
 interface EditorReviewProps {
@@ -57,7 +57,7 @@ export const EditorReview = ({
   }, [pushHistory]);
 
   const handleCropConfirm = useCallback(async (cropData: CropData) => {
-    if (!processedImage?.processedImage) return;
+    if (!processedImage?.processedImage || !cropData.croppedAreaPixels) return;
 
     setIsApplyingCrop(true);
     
@@ -81,9 +81,18 @@ export const EditorReview = ({
       const outputWidth = Math.round(widthInches * 300);
       const outputHeight = Math.round(heightInches * 300);
 
+      // Convert react-easy-crop Area to PixelCrop
+      const pixelCrop: PixelCrop = {
+        x: cropData.croppedAreaPixels.x,
+        y: cropData.croppedAreaPixels.y,
+        width: cropData.croppedAreaPixels.width,
+        height: cropData.croppedAreaPixels.height,
+      };
+
       const newImageUrl = await applyCropTransform({
         imageUrl: processedImage.processedImage,
-        cropData,
+        pixelCrop,
+        rotation: cropData.rotation,
         outputWidth,
         outputHeight,
         backgroundColor: bgColor === 'white' ? '#FFFFFF' : '#E0E0E0',
