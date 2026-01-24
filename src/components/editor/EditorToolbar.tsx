@@ -7,9 +7,12 @@ import {
   ZoomIn, 
   ZoomOut,
   Hand,
-  MousePointer2
+  MousePointer2,
+  Crown,
+  Download
 } from "lucide-react";
 import { useImageProcessingContext } from "@/contexts/ImageProcessingContext";
+import { NeoBadge } from "@/components/ui/neo-badge";
 import type { BrushTool } from "@/hooks/useCanvasBrush";
 
 interface ToolButton {
@@ -19,6 +22,12 @@ interface ToolButton {
   shortcut: string;
 }
 
+export interface DownloadStatus {
+  isProActive: boolean;
+  freeDownloadsRemaining: number;
+  freeDownloadLimit: number;
+}
+
 const tools: ToolButton[] = [
   { id: "select", icon: MousePointer2, label: "Select", shortcut: "V" },
   { id: "pan", icon: Hand, label: "Pan", shortcut: "H" },
@@ -26,7 +35,11 @@ const tools: ToolButton[] = [
   { id: "restore", icon: Paintbrush, label: "Restore", shortcut: "R" },
 ];
 
-export const EditorToolbar = () => {
+interface EditorToolbarProps {
+  downloadStatus?: DownloadStatus;
+}
+
+export const EditorToolbar = ({ downloadStatus }: EditorToolbarProps) => {
   const {
     activeTool,
     setActiveTool,
@@ -116,27 +129,49 @@ export const EditorToolbar = () => {
           </motion.button>
         </div>
 
-        {/* Right: Zoom */}
-        <div className="flex items-center gap-1">
-          <motion.button
-            onClick={() => setZoom(Math.max(50, zoom - 10))}
-            className="p-2.5 border-2 border-primary hover:bg-secondary transition-all"
-            whileTap={{ scale: 0.95 }}
-            title="Zoom Out (-)"
-          >
-            <ZoomOut className="w-5 h-5" />
-          </motion.button>
+        {/* Right: Zoom + Download Status */}
+        <div className="flex items-center gap-3">
+          {/* Zoom Controls */}
+          <div className="flex items-center gap-1">
+            <motion.button
+              onClick={() => setZoom(Math.max(50, zoom - 10))}
+              className="p-2.5 border-2 border-primary hover:bg-secondary transition-all"
+              whileTap={{ scale: 0.95 }}
+              title="Zoom Out (-)"
+            >
+              <ZoomOut className="w-5 h-5" />
+            </motion.button>
 
-          <span className="font-mono text-sm w-12 text-center">{zoom}%</span>
+            <span className="font-mono text-sm w-12 text-center">{zoom}%</span>
 
-          <motion.button
-            onClick={() => setZoom(Math.min(200, zoom + 10))}
-            className="p-2.5 border-2 border-primary hover:bg-secondary transition-all"
-            whileTap={{ scale: 0.95 }}
-            title="Zoom In (+)"
-          >
-            <ZoomIn className="w-5 h-5" />
-          </motion.button>
+            <motion.button
+              onClick={() => setZoom(Math.min(200, zoom + 10))}
+              className="p-2.5 border-2 border-primary hover:bg-secondary transition-all"
+              whileTap={{ scale: 0.95 }}
+              title="Zoom In (+)"
+            >
+              <ZoomIn className="w-5 h-5" />
+            </motion.button>
+          </div>
+
+          {/* Download Status Indicator */}
+          {downloadStatus && (
+            <>
+              <div className="w-px h-8 bg-primary" />
+              {downloadStatus.isProActive ? (
+                <NeoBadge variant="brand" icon={<Crown className="w-3.5 h-3.5" />}>
+                  Pro
+                </NeoBadge>
+              ) : (
+                <NeoBadge 
+                  variant={downloadStatus.freeDownloadsRemaining > 0 ? "highlight" : "muted"}
+                  icon={<Download className="w-3.5 h-3.5" />}
+                >
+                  {downloadStatus.freeDownloadsRemaining}/{downloadStatus.freeDownloadLimit} Free
+                </NeoBadge>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
