@@ -2,6 +2,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Camera, CloudOff, Save } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NeoButton } from "@/components/ui/neo-button";
+import { useImageProcessingContext } from "@/contexts/ImageProcessingContext";
+import { toast } from "@/hooks/use-toast";
 import type { EditorState } from "@/pages/Editor";
 
 interface EditorHeaderProps {
@@ -11,11 +13,29 @@ interface EditorHeaderProps {
 }
 
 export const EditorHeader = ({ editorState, onStartOver, hasUnsavedChanges }: EditorHeaderProps) => {
+  const { savedCanvasState, markAsSaved } = useImageProcessingContext();
+  
   const stateLabels: Record<EditorState, string> = {
     upload: "Upload Photo",
     processing: "Processing...",
     review: "Review & Edit",
     download: "Download",
+  };
+
+  const handleSaveNow = () => {
+    if (!savedCanvasState) return;
+    
+    const recoveryData = {
+      canvasState: savedCanvasState,
+      timestamp: Date.now(),
+    };
+    localStorage.setItem("fotoid_canvas_recovery", JSON.stringify(recoveryData));
+    markAsSaved();
+    
+    toast({
+      title: "Saved!",
+      description: "Your edits have been saved locally.",
+    });
   };
 
   return (
@@ -41,17 +61,28 @@ export const EditorHeader = ({ editorState, onStartOver, hasUnsavedChanges }: Ed
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Unsaved Changes Indicator */}
+          {/* Unsaved Changes Indicator & Save Button */}
           <AnimatePresence>
             {hasUnsavedChanges && (editorState === "review" || editorState === "download") && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-warning/20 border-2 border-warning text-warning-foreground text-xs font-bold"
+                className="flex items-center gap-2"
               >
-                <CloudOff className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Unsaved</span>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-warning/20 border-2 border-warning text-warning-foreground text-xs font-bold">
+                  <CloudOff className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Unsaved</span>
+                </div>
+                <NeoButton
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleSaveNow}
+                  className="gap-1.5"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Save</span>
+                </NeoButton>
               </motion.div>
             )}
           </AnimatePresence>
