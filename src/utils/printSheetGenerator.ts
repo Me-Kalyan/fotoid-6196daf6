@@ -344,9 +344,33 @@ function drawImageCover(
   width: number,
   height: number
 ): void {
-  // Draw image directly to target dimensions - the source image is already properly
-  // cropped by the user in the editor, so we just scale it to fit
-  ctx.drawImage(img, x, y, width, height);
+  // The source image is already cropped by the user in the editor.
+  // We need to "cover" the target area while preserving aspect ratio,
+  // centering the image and clipping overflow.
+  
+  const sourceAspect = img.naturalWidth / img.naturalHeight;
+  const targetAspect = width / height;
+  
+  let sourceX = 0;
+  let sourceY = 0;
+  let sourceWidth = img.naturalWidth;
+  let sourceHeight = img.naturalHeight;
+  
+  if (sourceAspect > targetAspect) {
+    // Source is wider than target - crop sides
+    sourceWidth = img.naturalHeight * targetAspect;
+    sourceX = (img.naturalWidth - sourceWidth) / 2;
+  } else if (sourceAspect < targetAspect) {
+    // Source is taller than target - crop top/bottom
+    sourceHeight = img.naturalWidth / targetAspect;
+    sourceY = (img.naturalHeight - sourceHeight) / 2;
+  }
+  
+  ctx.drawImage(
+    img,
+    sourceX, sourceY, sourceWidth, sourceHeight, // Source rectangle
+    x, y, width, height // Destination rectangle
+  );
 }
 
 function drawCropMarks(
