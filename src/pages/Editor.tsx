@@ -5,6 +5,7 @@ import { EditorProcessing } from "@/components/editor/EditorProcessing";
 import { EditorReview } from "@/components/editor/EditorReview";
 import { EditorDownload } from "@/components/editor/EditorDownload";
 import { EditorHeader } from "@/components/editor/EditorHeader";
+import { RecoveryBanner } from "@/components/editor/RecoveryBanner";
 import { AuthGate } from "@/components/editor/AuthGate";
 import { ImageProcessingProvider, useImageProcessingContext } from "@/contexts/ImageProcessingContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,7 +28,15 @@ const EditorContent = () => {
   });
   const [bgColor, setBgColor] = useState<"white" | "grey">("white");
 
-  const { processImage, reset, error } = useImageProcessingContext();
+  const { 
+    processImage, 
+    reset, 
+    error,
+    hasUnsavedChanges,
+    hasRecoveryData,
+    applyRecovery,
+    dismissRecovery,
+  } = useImageProcessingContext();
 
   const handleFileSelect = useCallback(async (file: File) => {
     setEditorState("processing");
@@ -54,11 +63,23 @@ const EditorContent = () => {
     setEditorState("upload");
   };
 
+  const handleRestoreRecovery = () => {
+    applyRecovery();
+    setEditorState("review");
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <EditorHeader
         editorState={editorState}
         onStartOver={handleStartOver}
+        hasUnsavedChanges={hasUnsavedChanges}
+      />
+      
+      <RecoveryBanner
+        show={hasRecoveryData && editorState === "upload"}
+        onRestore={handleRestoreRecovery}
+        onDismiss={dismissRecovery}
       />
 
       <main className="flex-1 flex">

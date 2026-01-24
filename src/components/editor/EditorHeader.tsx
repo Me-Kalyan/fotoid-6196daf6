@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
-import { ArrowLeft, Camera } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Camera, CloudOff, Save } from "lucide-react";
 import { Link } from "react-router-dom";
 import { NeoButton } from "@/components/ui/neo-button";
 import type { EditorState } from "@/pages/Editor";
@@ -7,9 +7,10 @@ import type { EditorState } from "@/pages/Editor";
 interface EditorHeaderProps {
   editorState: EditorState;
   onStartOver: () => void;
+  hasUnsavedChanges?: boolean;
 }
 
-export const EditorHeader = ({ editorState, onStartOver }: EditorHeaderProps) => {
+export const EditorHeader = ({ editorState, onStartOver, hasUnsavedChanges }: EditorHeaderProps) => {
   const stateLabels: Record<EditorState, string> = {
     upload: "Upload Photo",
     processing: "Processing...",
@@ -40,6 +41,21 @@ export const EditorHeader = ({ editorState, onStartOver }: EditorHeaderProps) =>
         </div>
 
         <div className="flex items-center gap-4">
+          {/* Unsaved Changes Indicator */}
+          <AnimatePresence>
+            {hasUnsavedChanges && (editorState === "review" || editorState === "download") && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-warning/20 border-2 border-warning text-warning-foreground text-xs font-bold"
+              >
+                <CloudOff className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Unsaved</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <motion.div
             className="px-4 py-2 border-2 border-primary bg-highlight text-highlight-foreground font-heading font-bold text-sm"
             initial={{ scale: 0.95 }}
