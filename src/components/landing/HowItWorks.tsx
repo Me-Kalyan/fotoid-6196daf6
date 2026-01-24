@@ -41,7 +41,7 @@ const HowItWorks = () => {
           <h2 className="font-heading text-4xl font-bold md:text-5xl">
             How it works
           </h2>
-          <p className="mt-4 text-lg text-muted-foreground">
+          <p className="mt-4 text-lg text-foreground/80">
             Three steps. Zero hassle. No drugstore required.
           </p>
         </motion.div>
