@@ -62,6 +62,10 @@ export async function applyCropTransform({
     throw new Error("Could not get canvas context");
   }
 
+  // Enable high-quality scaling
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+
   // If there's rotation, we need to handle it differently
   if (rotation !== 0) {
     const rotRad = (rotation * Math.PI) / 180;
@@ -87,23 +91,43 @@ export async function applyCropTransform({
     tempCtx.fillStyle = backgroundColor;
     tempCtx.fillRect(0, 0, bBoxWidth, bBoxHeight);
 
-    // Draw rotated image
+    // Draw rotated image centered
     tempCtx.translate(bBoxWidth / 2, bBoxHeight / 2);
     tempCtx.rotate(rotRad);
     tempCtx.translate(-image.width / 2, -image.height / 2);
     tempCtx.drawImage(image, 0, 0);
 
-    // Now crop from the rotated image
-    canvas.width = outputWidth;
-    canvas.height = outputHeight;
-
-    ctx.fillStyle = backgroundColor;
-    ctx.fillRect(0, 0, outputWidth, outputHeight);
-
-    ctx.drawImage(
-      tempCanvas,
+    // Get the cropped pixel data from the rotated canvas
+    const croppedData = tempCtx.getImageData(
       pixelCrop.x,
       pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height
+    );
+
+    // Create intermediate canvas at crop size
+    const intermediateCanvas = document.createElement("canvas");
+    intermediateCanvas.width = pixelCrop.width;
+    intermediateCanvas.height = pixelCrop.height;
+    const intermediateCtx = intermediateCanvas.getContext("2d");
+
+    if (!intermediateCtx) {
+      throw new Error("Could not get intermediate canvas context");
+    }
+
+    intermediateCtx.putImageData(croppedData, 0, 0);
+
+    // Now scale to final output size
+    canvas.width = outputWidth;
+    canvas.height = outputHeight;
+    ctx.fillStyle = backgroundColor;
+    ctx.fillRect(0, 0, outputWidth, outputHeight);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(
+      intermediateCanvas,
+      0,
+      0,
       pixelCrop.width,
       pixelCrop.height,
       0,
@@ -112,7 +136,7 @@ export async function applyCropTransform({
       outputHeight
     );
   } else {
-    // No rotation - simple crop
+    // No rotation - simple crop with high-quality scaling
     canvas.width = outputWidth;
     canvas.height = outputHeight;
 
@@ -132,7 +156,7 @@ export async function applyCropTransform({
     );
   }
 
-  return canvas.toDataURL("image/png");
+  return canvas.toDataURL("image/png", 1.0);
 }
 
 /**
