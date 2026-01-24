@@ -6,6 +6,7 @@ import { photoPresets, paperSizes, type PaperSize } from "@/lib/sizes";
 import { getCroppedImg, generateSheet } from "@/lib/canvasUtils";
 import { Loader2, ArrowLeft, Upload, Settings2, Printer, Download, RotateCcw, RotateCw, Crown } from "lucide-react";
 import { NeoBadge } from "@/components/ui/neo-badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -213,18 +214,31 @@ const Editor = () => {
         </Link>
         <div className="flex items-center gap-3">
           {/* Download Status Indicator */}
-          {isProActive ? (
-            <NeoBadge variant="brand" icon={<Crown className="w-3.5 h-3.5" />}>
-              Pro
-            </NeoBadge>
-          ) : (
-            <NeoBadge 
-              variant={freeDownloadsRemaining > 0 ? "highlight" : "muted"}
-              icon={<Download className="w-3.5 h-3.5" />}
-            >
-              {freeDownloadsRemaining}/2 Free
-            </NeoBadge>
-          )}
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                {isProActive ? (
+                  <NeoBadge variant="brand" icon={<Crown className="w-3.5 h-3.5" />}>
+                    Pro
+                  </NeoBadge>
+                ) : (
+                  <NeoBadge 
+                    variant={freeDownloadsRemaining > 0 ? "highlight" : "muted"}
+                    icon={<Download className="w-3.5 h-3.5" />}
+                  >
+                    {freeDownloadsRemaining}/2 Free
+                  </NeoBadge>
+                )}
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[200px] text-center">
+                {isProActive 
+                  ? "Unlimited downloads with Pro!" 
+                  : freeDownloadsRemaining > 0
+                    ? `${freeDownloadsRemaining} free download${freeDownloadsRemaining > 1 ? 's' : ''} left. After that, pay per photo or upgrade to Pro.`
+                    : "Free downloads used. Pay ₹49 per photo or upgrade to Pro for unlimited."}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <div className="flex items-center gap-2">
             <span className="font-heading font-black text-lg text-brand">FOTOID</span>
             <span className="font-heading font-bold text-sm text-muted-foreground">STUDIO</span>
