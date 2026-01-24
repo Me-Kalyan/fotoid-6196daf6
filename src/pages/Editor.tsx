@@ -242,7 +242,7 @@ const Editor = () => {
             )}
 
             {processedImage && !isProcessing && (
-              <div className="relative w-full h-[50vh] min-h-[300px] max-h-[500px] bg-muted">
+              <div className="relative w-full h-[50vh] min-h-[300px] max-h-[500px] bg-muted touch-none">
                 <Cropper
                   image={processedImage}
                   crop={crop}
