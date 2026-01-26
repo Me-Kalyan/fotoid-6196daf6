@@ -14,7 +14,7 @@ const defaultSEO = {
   title: "FotoID - AI Passport Photos in Seconds",
   description: "Create perfect passport photos in seconds with AI-powered background removal. Works for 100+ countries. Free to try.",
   image: "/og-image.png",
-  url: "https://fotoid.lovable.app",
+  url: "https://fotoid.xyz",
 };
 
 export const SEOHead = ({
@@ -104,8 +104,8 @@ export const StructuredData = () => {
     "applicationCategory": "PhotographyApplication",
     "operatingSystem": "Web Browser",
     "description": "Create perfect passport photos in seconds with AI-powered background removal. Works for 100+ countries.",
-    "url": "https://fotoid.lovable.app",
-    "image": "https://fotoid.lovable.app/og-image.png",
+    "url": "https://fotoid.xyz",
+    "image": "https://fotoid.xyz/og-image.png",
     "offers": {
       "@type": "Offer",
       "price": "0",
@@ -126,7 +126,7 @@ export const StructuredData = () => {
     "publisher": {
       "@type": "Organization",
       "name": "FotoID",
-      "url": "https://fotoid.lovable.app"
+      "url": "https://fotoid.xyz"
     }
   };
 
